@@ -1,0 +1,18 @@
+---
+services:
+  ente-web:
+      image: ghcr.io/kevinsj/ente_web:latest
+      ports:
+          - 3000:3000
+          - 3001:3001
+          - 3002:3002
+          - 3003:3003
+          - 3004:3004
+          - 3005:3005
+      environment:
+          - NODE_ENV=development
+          - NEXT_PUBLIC_ENTE_ENDPOINT=https://ente.raspberrypi.lan
+          - NEXT_PUBLIC_ENTE_ALBUMS_ENDPOINT=https://ente.raspberrypi.lan
+          - NEXT_PUBLIC_ENTE_ACCOUNTS_URL=https://ente.raspberrypi.lan
+      restart: always
+...

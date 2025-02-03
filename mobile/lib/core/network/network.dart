@@ -9,18 +9,17 @@ import 'package:photos/core/network/ente_interceptor.dart';
 import "package:photos/events/endpoint_updated_event.dart";
 import "package:ua_client_hints/ua_client_hints.dart";
 
-Duration kConnectTimeout = const Duration(milliseconds: 15000);
-
 class NetworkClient {
   late Dio _dio;
   late Dio _enteDio;
+  static const kConnectTimeout = 15;
 
   Future<void> init(PackageInfo packageInfo) async {
     final String ua = await userAgent();
     final endpoint = Configuration.instance.getHttpEndpoint();
     _dio = Dio(
       BaseOptions(
-        connectTimeout: kConnectTimeout,
+        connectTimeout: const Duration(seconds: kConnectTimeout),
         headers: {
           HttpHeaders.userAgentHeader: ua,
           'X-Client-Version': packageInfo.version,
@@ -31,7 +30,7 @@ class NetworkClient {
     _enteDio = Dio(
       BaseOptions(
         baseUrl: endpoint,
-        connectTimeout: kConnectTimeout,
+        connectTimeout: const Duration(seconds: kConnectTimeout),
         headers: {
           HttpHeaders.userAgentHeader: ua,
           'X-Client-Version': packageInfo.version,

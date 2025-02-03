@@ -1,0 +1,251 @@
+DEPRECATED: The legacy builder is deprecated and will be removed in a future release.
+            Install the buildx component to build images with BuildKit:
+            https://docs.docker.com/go/buildx/
+
+Sending build context to Docker daemon  8.203MB
+Step 1/23 : FROM node:lts-alpine AS builder
+ ---> ea96bbf1ccf0
+Step 2/23 : WORKDIR /app
+ ---> Running in 3a9af93c7cf2
+ ---> Removed intermediate container 3a9af93c7cf2
+ ---> e780d226df8e
+Step 3/23 : COPY . .
+ ---> 440c0c428e10
+Step 4/23 : ARG NEXT_PUBLIC_ENTE_ENDPOINT=https://ente.example.com
+ ---> Running in 27dada67d375
+ ---> Removed intermediate container 27dada67d375
+ ---> 238577d4fdff
+Step 5/23 : ENV NEXT_PUBLIC_ENTE_ENDPOINT=${NEXT_PUBLIC_ENTE_ENDPOINT}
+ ---> Running in 78ccc688cc8a
+ ---> Removed intermediate container 78ccc688cc8a
+ ---> 462a4c7fe074
+Step 6/23 : ARG NEXT_PUBLIC_ENTE_ALBUMS_ENDPOINT=https://album.example.com
+ ---> Running in 15a1a4368d81
+ ---> Removed intermediate container 15a1a4368d81
+ ---> 841b8b3c23cf
+Step 7/23 : ENV NEXT_PUBLIC_ENTE_ALBUMS_ENDPOINT=${NEXT_PUBLIC_ENTE_ALBUMS_ENDPOINT}
+ ---> Running in ded3556e78c9
+ ---> Removed intermediate container ded3556e78c9
+ ---> 46d75dd67dab
+Step 8/23 : RUN yarn install && yarn build:photos && yarn build:auth && yarn build:accounts
+ ---> Running in 71531933bcc5
+yarn install v1.22.22
+[1/4] Resolving packages...
+[2/4] Fetching packages...
+[3/4] Linking dependencies...
+[91mwarning "workspace-aggregator-ee92bba5-9a5d-4108-bf7d-d4baa37c9919 > @/accounts > react-otp-input@3.1.1" has unmet peer dependency "react@>=16.8.6 || ^17.0.0 || ^18.0.0".
+warning "workspace-aggregator-ee92bba5-9a5d-4108-bf7d-d4baa37c9919 > @/accounts > react-otp-input@3.1.1" has unmet peer dependency "react-dom@>=16.8.6 || ^17.0.0 || ^18.0.0".
+[0m[4/4] Building fresh packages...
+Done in 35.78s.
+yarn run v1.22.22
+$ yarn workspace photos next build
+$ /app/node_modules/.bin/next build
+   ▲ Next.js 15.1.4
+   - Environments: .env
+
+   Linting and checking validity of types ...
+[91m
+[0m[91m ⚠ The Next.js plugin was not detected in your ESLint configuration. See https://nextjs.org/docs/app/api-reference/config/eslint#migrating-existing-config
+[0m   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Collecting page data ...
+   Generating static pages (0/19) ...
+   Generating static pages (4/19) 
+   Generating static pages (9/19) 
+   Generating static pages (14/19) 
+ ✓ Generating static pages (19/19)
+   Finalizing page optimization ...
+   Collecting build traces ...
+   Exporting (0/19) ...
+   Exporting (4/19) 
+   Exporting (9/19) 
+   Exporting (14/19) 
+ ✓ Exporting (19/19)
+
+Route (pages)                              Size     First Load JS
+┌ ○ /                                      7.7 kB         1.29 MB
+├   /_app                                  0 B             802 kB
+├ ○ /404 (513 ms)                          312 B           803 kB
+├ ○ /change-email (513 ms)                 5.73 kB         849 kB
+├ ○ /change-password                       3.61 kB        1.27 MB
+├ ○ /credentials                           1.97 kB         884 kB
+├ ○ /duplicates (532 ms)                   3.69 kB         837 kB
+├ ○ /gallery (471 ms)                      237 B          1.21 MB
+├ ○ /generate                              4.29 kB        1.36 MB
+├ ○ /login                                 6.56 kB         850 kB
+├ ○ /passkeys/finish (513 ms)              919 B           803 kB
+├ ○ /passkeys/recover                      323 B           930 kB
+├ ○ /recover                               5.77 kB         931 kB
+├ ○ /shared-albums (471 ms)                4.19 kB        1.21 MB
+├ ○ /signup                                5.18 kB        1.29 MB
+├ ○ /two-factor/recover (515 ms)           327 B           930 kB
+├ ○ /two-factor/setup (514 ms)             5.03 kB         830 kB
+├ ○ /two-factor/verify (514 ms)            5.69 kB         820 kB
+└ ○ /verify (533 ms)                       3.75 kB         883 kB
++ First Load JS shared by all              805 kB
+  ├ chunks/framework-72977bf5cae5a3f8.js   57.5 kB
+  ├ chunks/main-34762cf1d90ebfe1.js        34 kB
+  ├ chunks/pages/_app-f72f9125e65ede97.js  708 kB
+  └ other shared chunks (total)            5.52 kB
+
+○  (Static)  prerendered as static content
+
+Done in 56.77s.
+yarn run v1.22.22
+$ yarn workspace auth next build
+$ /app/node_modules/.bin/next build
+   ▲ Next.js 15.1.4
+   - Environments: .env
+
+   Linting and checking validity of types ...
+[91m
+[0m[91m ⚠ The Next.js plugin was not detected in your ESLint configuration. See https://nextjs.org/docs/app/api-reference/config/eslint#migrating-existing-config
+[0m   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Collecting page data ...
+   Generating static pages (0/17) ...
+   Generating static pages (4/17) 
+   Generating static pages (8/17) 
+   Generating static pages (12/17) 
+ ✓ Generating static pages (17/17)
+   Finalizing page optimization ...
+   Collecting build traces ...
+   Exporting (0/17) ...
+   Exporting (4/17) 
+   Exporting (8/17) 
+   Exporting (12/17) 
+ ✓ Exporting (17/17)
+
+Route (pages)                              Size     First Load JS
+┌ ○ / (432 ms)                             320 B           217 kB
+├   /_app                                  0 B             217 kB
+├ ○ /404 (430 ms)                          305 B           217 kB
+├ ○ /auth                                  22.2 kB         712 kB
+├ ○ /change-password                       2.02 kB        1.14 MB
+├ ○ /credentials                           2.68 kB         755 kB
+├ ○ /generate                              4.04 kB        1.24 MB
+├ ○ /login (430 ms)                        5.34 kB         266 kB
+├ ○ /passkeys/finish (431 ms)              921 B           673 kB
+├ ○ /passkeys/recover (430 ms)             337 B           802 kB
+├ ○ /recover                               4.69 kB         803 kB
+├ ○ /share (430 ms)                        3.68 kB         676 kB
+├ ○ /signup                                6.45 kB        1.16 MB
+├ ○ /two-factor/recover                    337 B           802 kB
+├ ○ /two-factor/setup (431 ms)             3.77 kB         703 kB
+├ ○ /two-factor/verify (430 ms)            5.72 kB         234 kB
+└ ○ /verify                                1.8 kB          755 kB
++ First Load JS shared by all              217 kB
+  ├ chunks/framework-575bf057e3cd06e6.js   57.5 kB
+  ├ chunks/main-cbaf6fe80178f447.js        33.8 kB
+  ├ chunks/pages/_app-64c287ce4dd42051.js  123 kB
+  └ other shared chunks (total)            3.04 kB
+
+○  (Static)  prerendered as static content
+
+Done in 32.90s.
+yarn run v1.22.22
+$ yarn workspace accounts next build
+$ /app/node_modules/.bin/next build
+   ▲ Next.js 15.1.4
+   - Environments: .env
+
+   Linting and checking validity of types ...
+[91m
+[0m[91m ⚠ The Next.js plugin was not detected in your ESLint configuration. See https://nextjs.org/docs/app/api-reference/config/eslint#migrating-existing-config
+[0m   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Collecting page data ...
+   Generating static pages (0/5) ...
+   Generating static pages (1/5) 
+   Generating static pages (2/5) 
+   Generating static pages (3/5) 
+ ✓ Generating static pages (5/5)
+   Finalizing page optimization ...
+   Collecting build traces ...
+   Exporting (0/5) ...
+   Exporting (1/5) 
+   Exporting (2/5) 
+   Exporting (3/5) 
+ ✓ Exporting (5/5)
+
+Route (pages)                              Size     First Load JS
+┌ ○ / (356 ms)                             302 B           167 kB
+├   /_app                                  0 B             166 kB
+├ ○ /404                                   193 B           166 kB
+├ ○ /passkeys (397 ms)                     51.3 kB         709 kB
+└ ○ /passkeys/verify (397 ms)              2.23 kB         660 kB
++ First Load JS shared by all              167 kB
+  ├ chunks/framework-575bf057e3cd06e6.js   57.5 kB
+  ├ chunks/main-cbaf6fe80178f447.js        33.8 kB
+  ├ chunks/pages/_app-947ac447a902cccc.js  72.5 kB
+  └ other shared chunks (total)            3 kB
+
+○  (Static)  prerendered as static content
+
+Done in 28.16s.
+ ---> Removed intermediate container 71531933bcc5
+ ---> 0a48b522117d
+Step 9/23 : FROM node:lts-alpine
+ ---> ea96bbf1ccf0
+Step 10/23 : WORKDIR /app
+ ---> Running in bffa826da79d
+ ---> Removed intermediate container bffa826da79d
+ ---> 9268f324f6ef
+Step 11/23 : COPY --from=builder /app/apps/photos/out /app/photos
+ ---> 94bad369f86d
+Step 12/23 : COPY --from=builder /app/apps/auth/out /app/auth
+ ---> e6d11e18237f
+Step 13/23 : COPY --from=builder /app/apps/accounts/out /app/accounts
+ ---> 71d32f948e65
+Step 14/23 : RUN npm install -g serve
+ ---> Running in 148dac88a64a
+
+added 88 packages in 4s
+
+24 packages are looking for funding
+  run `npm fund` for details
+[91mnpm notice
+npm notice New major version of npm available! 10.9.2 -> 11.0.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.0.0
+npm notice To update run: npm install -g npm@11.0.0
+npm notice
+[0m ---> Removed intermediate container 148dac88a64a
+ ---> 86a4dce483a7
+Step 15/23 : ENV WEBPORT=3000
+ ---> Running in d356b4107f2e
+ ---> Removed intermediate container d356b4107f2e
+ ---> 5bb2f7ba4d89
+Step 16/23 : EXPOSE ${WEBPORT}
+ ---> Running in 008345298f6c
+ ---> Removed intermediate container 008345298f6c
+ ---> ba23bd1693c6
+Step 17/23 : ENV PUBLICPORT=3002
+ ---> Running in 4c5579b2abdd
+ ---> Removed intermediate container 4c5579b2abdd
+ ---> a5100c9b99ce
+Step 18/23 : EXPOSE ${PUBLICPORT}
+ ---> Running in ffd7f3f78a8a
+ ---> Removed intermediate container ffd7f3f78a8a
+ ---> 55457309002d
+Step 19/23 : ENV ACCOUNTS=3001
+ ---> Running in 709d1e7e9ef8
+ ---> Removed intermediate container 709d1e7e9ef8
+ ---> 6faabf6d2528
+Step 20/23 : EXPOSE ${ACCOUNTS}
+ ---> Running in d912c2d74e43
+ ---> Removed intermediate container d912c2d74e43
+ ---> 0c3101cbafdf
+Step 21/23 : ENV AUTHPORT=3005
+ ---> Running in 56c9aff907a2
+ ---> Removed intermediate container 56c9aff907a2
+ ---> e834abf6030a
+Step 22/23 : EXPOSE ${AUTHPORT}
+ ---> Running in c2fd63afc85f
+ ---> Removed intermediate container c2fd63afc85f
+ ---> ec21f42928f0
+Step 23/23 : CMD ["sh", "-c", "serve /app/photos -l tcp://0.0.0.0:${WEBPORT} -l tcp://0.0.0.0:${PUBLICPORT} & serve /app/auth -l tcp://0.0.0.0:${AUTHPORT} & serve /app/accounts -l tcp://0.0.0.0:${ACCOUNTS}"]
+ ---> Running in 1a616460a715
+ ---> Removed intermediate container 1a616460a715
+ ---> d974038e9142
+Successfully built d974038e9142
+Successfully tagged ghcr.io/kevinsj/ente_web:latest

@@ -123,8 +123,10 @@ class _LoginPasswordVerificationPageState
           S.of(context).pleaseTryAgain,
         );
       } else {
-        _logger.severe('API failure during SRP login', e, s);
-        if (e.type == DioExceptionType.unknown) {
+        _logger.severe('API failure during SRP login ${e.type}', e, s);
+        if (e.type == DioExceptionType.connectionTimeout ||
+            e.type == DioExceptionType.receiveTimeout ||
+            e.type == DioExceptionType.sendTimeout) {
           await _showContactSupportDialog(
             context,
             S.of(context).noInternetConnection,
