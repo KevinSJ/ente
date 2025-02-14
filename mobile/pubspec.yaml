@@ -135,6 +135,7 @@ dependencies:
     git:
       url: https://github.com/ashilkn/native_video_player.git
       ref: notify_if_video_isnt_playable
+  native_dio_adapter: ^1.4.0
   onnx_dart:
     path: plugins/onnx_dart
   onnxruntime:
