@@ -1,5 +1,5 @@
-import 'package:dio/dio.dart';
 import 'package:ente_auth/core/configuration.dart';
+import 'package:ente_auth/core/network.dart';
 import 'package:ente_auth/l10n/l10n.dart';
 import 'package:ente_auth/ui/common/gradient_button.dart';
 import 'package:ente_auth/utils/dialog_util.dart';
@@ -79,7 +79,8 @@ class _DeveloperSettingsPageState extends State<DeveloperSettingsPage> {
 
   Future<void> _ping(String endpoint) async {
     try {
-      final response = await Dio().get('$endpoint/ping');
+      final response =
+          await Network.instance.getDio().get('$endpoint/ping');
       if (response.data['message'] != 'pong') {
         throw Exception('Invalid response');
       }
