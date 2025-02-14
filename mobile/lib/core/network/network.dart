@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:native_dio_adapter/native_dio_adapter.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import "package:photos/core/configuration.dart";
 import "package:photos/core/event_bus.dart";
@@ -40,6 +41,8 @@ class NetworkClient {
     );
     _setupInterceptors(endpoint);
 
+    _dio.httpClientAdapter = NativeAdapter();
+    _enteDio.httpClientAdapter = NativeAdapter();
     Bus.instance.on<EndpointUpdatedEvent>().listen((event) {
       final endpoint = Configuration.instance.getHttpEndpoint();
       _enteDio.options.baseUrl = endpoint;
