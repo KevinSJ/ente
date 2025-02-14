@@ -42,7 +42,7 @@ dependencies:
   dart_ui_isolate: ^1.1.1
   defer_pointer: ^0.0.2
   device_info_plus: ^9.0.3
-  dio: ^4.0.6
+  dio: ^5.4.0
   dots_indicator: ^2.0.0
   dotted_border: ^2.1.0
   dropdown_button2: ^2.0.0
@@ -134,6 +134,7 @@ dependencies:
     git:
       url: https://github.com/ashilkn/native_video_player.git
       ref: notify_if_video_isnt_playable
+  native_dio_adapter: ^1.4.0
   onnx_dart:
     path: plugins/onnx_dart
   onnxruntime:

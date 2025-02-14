@@ -7,7 +7,7 @@ environment:
 
 dependencies:
   collection:
-  dio: ^4.0.6
+  dio: ^5.4.0
   flutter:
     sdk: flutter
   shared_preferences: ^2.0.5

@@ -1342,8 +1342,8 @@ class FileUploader {
       );
 
       return uploadURL.objectKey;
-    } on DioError catch (e) {
-      if (e.message.startsWith("HttpException: Content size")) {
+    } on DioException catch (e) {
+      if (e.message != null && e.message!.startsWith("HttpException: Content size")) {
         rethrow;
       } else if (attempt < kMaximumUploadAttempts) {
         _logger.info("Upload failed for $fileName, retrying");

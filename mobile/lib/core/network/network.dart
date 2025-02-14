@@ -8,7 +8,7 @@ import 'package:photos/core/network/ente_interceptor.dart';
 import "package:photos/events/endpoint_updated_event.dart";
 import "package:ua_client_hints/ua_client_hints.dart";
 
-int kConnectTimeout = 15000;
+Duration kConnectTimeout = const Duration(milliseconds: 15000);
 
 class NetworkClient {
   late Dio _dio;

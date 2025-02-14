@@ -107,9 +107,9 @@ String parseErrorForUI(
   if (error == null) {
     return genericError;
   }
-  if (error is DioError) {
+  if (error is DioException) {
     final DioError dioError = error;
-    if (dioError.type == DioErrorType.other) {
+    if (dioError.type == DioExceptionType.unknown) {
       if (dioError.error.toString().contains('Failed host lookup')) {
         return S.of(context).networkHostLookUpErr;
       } else if (dioError.error.toString().contains('SocketException')) {
@@ -122,15 +122,15 @@ String parseErrorForUI(
     return genericError;
   }
   String errorInfo = "";
-  if (error is DioError) {
-    final DioError dioError = error;
-    if (dioError.type == DioErrorType.response) {
+  if (error is DioException) {
+    final DioException dioError = error;
+    if (dioError.type == DioExceptionType.badResponse) {
       if (dioError.response?.data["code"] != null) {
         errorInfo = "Reason: " + dioError.response!.data["code"];
       } else {
         errorInfo = "Reason: " + dioError.response!.data.toString();
       }
-    } else if (dioError.type == DioErrorType.other) {
+    } else if (dioError.type == DioExceptionType.unknown) {
       errorInfo = "Reason: " + dioError.error.toString();
     } else {
       errorInfo = "Reason: " + dioError.type.toString();
