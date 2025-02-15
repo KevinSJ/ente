@@ -1,4 +1,4 @@
-name: "Release (photos independent)"
+name: "Release (auth independent)"
 
 on:
     workflow_dispatch: # Allow manually running the action
@@ -6,13 +6,10 @@ on:
         # Run when a tag matching the pattern "photos-v*"" is pushed
         # See: [Note: Testing release workflows that are triggered by tags]
         tags:
-            - "photos-v*"
+            - "auth-v*"
 
 env:
     FLUTTER_VERSION: "3.24.3"
-
-permissions:
-    contents: write
 
 jobs:
     build:
@@ -20,7 +17,7 @@ jobs:
 
         defaults:
             run:
-                working-directory: mobile/apps/photos
+                working-directory: auth
 
         steps:
             - name: Checkout code and submodules
@@ -49,7 +46,7 @@ jobs:
             - name: Build independent APK
               run: |
                 flutter build apk --dart-define=cronetHttpNoPlay=true --release --flavor independent
-                mv build/app/outputs/flutter-apk/app-independent-release.apk build/app/outputs/flutter-apk/ente-photos-main.apk
+                mv build/app/outputs/flutter-apk/app-independent-release.apk build/app/outputs/flutter-apk/ente-auth-${{ github.ref_name }}.apk
               env:
                   SIGNING_KEY_PATH: "/home/runner/work/_temp/keystore/ente_photos_key.jks"
                   SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS_PHOTOS }}
@@ -57,7 +54,7 @@ jobs:
                   SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD_PHOTOS }}
 
             - name: Checksum
-              run: sha256sum build/app/outputs/flutter-apk/ente-photos-main.apk > build/app/outputs/flutter-apk/sha256sum
+              run: sha256sum build/app/outputs/flutter-apk/ente-auth-main.apk > build/app/outputs/flutter-apk/sha256sum
 
             - name: Upload outputs directory
               uses: actions/upload-artifact@main
