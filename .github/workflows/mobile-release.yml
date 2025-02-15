@@ -62,8 +62,8 @@ jobs:
             - name: Upload outputs directory
               uses: actions/upload-artifact@main
               with:
-                name: ente-photos-${{ env.FILE_DATE }}
-                path: build/app/outputs/flutter-apk/
+                name: ente-photos-android
+                path: mobile/build/app/outputs/flutter-apk/
 
             - name: Generate release tag
               id: tag
@@ -80,7 +80,7 @@ jobs:
               with:
                 tag_name: ${{ steps.tag.outputs.release_tag }}
                 body_path: release.txt
-                files: build/app/outputs/flutter-apk/*
+                files: mobile/build/app/outputs/flutter-apk/*
 
             - name: Remove old Releases
               uses: dev-drprasad/delete-older-releases@master
