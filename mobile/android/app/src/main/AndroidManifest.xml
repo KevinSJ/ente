@@ -7,6 +7,7 @@
         android:usesCleartextTraffic="true"
         android:requestLegacyExternalStorage="true"
         android:allowBackup="false"
+        android:networkSecurityConfig="@xml/network_security_config"
         android:fullBackupContent="false"
         android:largeHeap="true">
 
@@ -46,16 +47,16 @@
                 <data android:mimeType="video/*" />
             </intent-filter>
 
-            <!-- App Link --> 
+            <!-- App Link -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data 
-                    android:scheme="https" 
+                <data
+                    android:scheme="https"
                     android:host="albums.ente.io"/>
             </intent-filter>
-            
+
             <!-- file provider to share files having a file:// URI -->
 
             <!--Filter
