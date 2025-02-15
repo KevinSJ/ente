@@ -57,6 +57,9 @@ class Network {
 
     _setupInterceptors(endpoint);
 
+    _dio.httpClientAdapter = NativeAdapter();
+    _enteDio.httpClientAdapter = NativeAdapter();
+
     Bus.instance.on<EndpointUpdatedEvent>().listen((event) {
       final endpoint = Configuration.instance.getHttpEndpoint();
       _enteDio.options.baseUrl = endpoint;

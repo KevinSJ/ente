@@ -41,6 +41,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_animate: ^4.1.0
+  native_dio_adapter: ^1.4.0
   flutter_bloc: ^8.0.1
   flutter_context_menu: ^0.2.0
   flutter_displaymode: ^0.6.0
