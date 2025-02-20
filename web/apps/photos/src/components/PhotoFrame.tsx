@@ -7,7 +7,7 @@ import {
 } from "@/gallery/services/download";
 import { EnteFile } from "@/media/file";
 import { FileType } from "@/media/file-type";
-import { FileViewer } from "@/new/photos/components/FileViewer";
+import { FileViewer } from "@/new/photos/components/FileViewerComponents";
 import type { GalleryBarMode } from "@/new/photos/components/gallery/reducer";
 import { TRASH_SECTION } from "@/new/photos/services/collection";
 import { styled } from "@mui/material";
@@ -112,8 +112,8 @@ export interface PhotoFrameProps {
     /** This will be set if mode is "people". */
     activePersonID?: string | undefined;
     enableDownload?: boolean;
-    fileToCollectionsMap?: Map<number, number[]>;
-    collectionNameMap?: Map<number, string>;
+    fileCollectionIDs?: Map<number, number[]>;
+    allCollectionsNameByID?: Map<number, string>;
     showAppDownloadBanner?: boolean;
     setIsPhotoSwipeOpen?: (value: boolean) => void;
     isInHiddenSection?: boolean;
@@ -138,8 +138,8 @@ const PhotoFrame = ({
     activeCollectionID,
     activePersonID,
     enableDownload,
-    fileToCollectionsMap,
-    collectionNameMap,
+    fileCollectionIDs,
+    allCollectionsNameByID,
     showAppDownloadBanner,
     setIsPhotoSwipeOpen,
     isInHiddenSection,
@@ -555,8 +555,8 @@ const PhotoFrame = ({
                     favoriteFileIDs,
                     markUnsyncedFavoriteUpdate,
                     markTempDeleted,
-                    collectionNameMap,
-                    fileToCollectionsMap,
+                    allCollectionsNameByID,
+                    fileCollectionIDs,
                     setFilesDownloadProgressAttributesCreator,
                     onSelectPerson,
                 }}
