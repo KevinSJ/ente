@@ -51,6 +51,10 @@ class Network {
         },
       ),
     );
+
+    _dio.httpClientAdapter = NativeAdapter();
+    _enteDio.httpClientAdapter = NativeAdapter();
+
     _setupInterceptors(endpoint);
 
     _dio.httpClientAdapter = NativeAdapter();

@@ -9,8 +9,7 @@ import {
 } from "@/base/components/utils/modal";
 import { lowercaseExtension } from "@/base/file-name";
 import log from "@/base/log";
-import { FileInfo } from "@/gallery/components/FileInfo";
-import { type FileInfoExif } from "@/gallery/components/viewer/data-source";
+import { FileInfo, type FileInfoExif } from "@/gallery/components/FileInfo";
 import { downloadManager } from "@/gallery/services/download";
 import { extractRawExif, parseExif } from "@/gallery/services/exif";
 import type { Collection } from "@/media/collection";
@@ -391,7 +390,7 @@ export const PhotoViewer: React.FC<PhotoViewerProps> = ({
         const extension = lowercaseExtension(file.metadata.title);
         // Assume it is supported.
         let isSupported = true;
-        if (needsJPEGConversion(extension)) {
+        if (extension && needsJPEGConversion(extension)) {
             // See if the file is on the whitelist of extensions that we know
             // will not be directly renderable.
             if (!isDesktop) {
