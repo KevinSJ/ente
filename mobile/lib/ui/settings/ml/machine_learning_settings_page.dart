@@ -12,7 +12,6 @@ import "package:photos/services/machine_learning/semantic_search/clip/clip_image
 import "package:photos/services/machine_learning/semantic_search/clip/clip_text_encoder.dart";
 import 'package:photos/services/machine_learning/semantic_search/semantic_search_service.dart';
 import "package:photos/services/remote_assets_service.dart";
-import "package:photos/services/user_remote_flag_service.dart";
 import "package:photos/theme/ente_theme.dart";
 import "package:photos/ui/common/loading_widget.dart";
 import "package:photos/ui/common/web_page.dart";
@@ -77,8 +76,7 @@ class _MachineLearningSettingsPageState
 
   @override
   Widget build(BuildContext context) {
-    final hasEnabled = userRemoteFlagService
-        .getCachedBoolValue(UserRemoteFlagService.mlEnabled);
+    final hasEnabled = flagService.hasGrantedMLConsent;
     return Scaffold(
       body: CustomScrollView(
         primary: false,
@@ -96,7 +94,9 @@ class _MachineLearningSettingsPageState
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (BuildContext context) {
-                          return const MLUserDeveloperOptions();
+                          return MLUserDeveloperOptions(
+                            mlIsEnabled: hasEnabled,
+                          );
                         },
                       ),
                     ).ignore();
@@ -211,8 +211,7 @@ class _MachineLearningSettingsPageState
   }
 
   Future<void> toggleMlConsent() async {
-    final oldMlConsent = userRemoteFlagService
-        .getCachedBoolValue(UserRemoteFlagService.mlEnabled);
+    final oldMlConsent = flagService.hasGrantedMLConsent;
     // Go to consent page first if not enabled
     if (!oldMlConsent) {
       final result = await Navigator.push(
@@ -228,10 +227,7 @@ class _MachineLearningSettingsPageState
       }
     }
     final mlConsent = !oldMlConsent;
-    await userRemoteFlagService.setBoolValue(
-      UserRemoteFlagService.mlEnabled,
-      mlConsent,
-    );
+    await flagService.setMLConsent(mlConsent);
     if (!mlConsent) {
       MLService.instance.pauseIndexingAndClustering();
       unawaited(
@@ -248,8 +244,7 @@ class _MachineLearningSettingsPageState
   }
 
   Widget _getMlSettings(BuildContext context) {
-    final hasEnabled = userRemoteFlagService
-        .getCachedBoolValue(UserRemoteFlagService.mlEnabled);
+    final hasEnabled = flagService.hasGrantedMLConsent;
     if (!hasEnabled) {
       return const SizedBox.shrink();
     }

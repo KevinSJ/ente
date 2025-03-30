@@ -74,12 +74,14 @@ export const OverflowMenu: React.FC<
                 {...(anchorEl ? { anchorEl } : {})}
                 open={!!anchorEl}
                 onClose={() => setAnchorEl(undefined)}
-                MenuListProps={{
-                    // Disable padding at the top and bottom of the menu list.
-                    disablePadding: true,
-                    "aria-labelledby": ariaID,
+                slotProps={{
+                    paper: { sx: menuPaperSxProps },
+                    list: {
+                        // Disable padding at the top and bottom of the menu list.
+                        disablePadding: true,
+                        "aria-labelledby": ariaID,
+                    },
                 }}
-                slotProps={{ paper: { sx: menuPaperSxProps } }}
                 anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
                 transformOrigin={{ vertical: "top", horizontal: "right" }}
             >
@@ -131,9 +133,7 @@ export const OverflowMenuOption: React.FC<
                 color: theme.vars.palette[color].main,
                 // Reduce the size of the icons a bit to make it fit better with
                 // the text.
-                "& .MuiSvgIcon-root": {
-                    fontSize: "20px",
-                },
+                "& .MuiSvgIcon-root": { fontSize: "20px" },
             })}
         >
             <Stack

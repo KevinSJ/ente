@@ -28,24 +28,23 @@ import 'package:photos/ente_theme_data.dart';
 import "package:photos/extensions/stop_watch.dart";
 import "package:photos/l10n/l10n.dart";
 import "package:photos/service_locator.dart";
+import "package:photos/services/account/user_service.dart";
 import 'package:photos/services/app_lifecycle_service.dart';
 import 'package:photos/services/collections_service.dart';
 import 'package:photos/services/favorites_service.dart';
 import "package:photos/services/filedata/filedata_service.dart";
 import 'package:photos/services/home_widget_service.dart';
 import 'package:photos/services/local_file_update_service.dart';
-import 'package:photos/services/local_sync_service.dart';
 import "package:photos/services/machine_learning/face_ml/person/person_service.dart";
 import 'package:photos/services/machine_learning/ml_service.dart';
 import 'package:photos/services/machine_learning/semantic_search/semantic_search_service.dart';
-import 'package:photos/services/memories_service.dart';
 import "package:photos/services/notification_service.dart";
 import "package:photos/services/preview_video_store.dart";
 import 'package:photos/services/push_service.dart';
-import 'package:photos/services/remote_sync_service.dart';
 import 'package:photos/services/search_service.dart';
-import "package:photos/services/sync_service.dart";
-import "package:photos/services/user_service.dart";
+import 'package:photos/services/sync/local_sync_service.dart';
+import 'package:photos/services/sync/remote_sync_service.dart';
+import "package:photos/services/sync/sync_service.dart";
 import 'package:photos/ui/tools/app_lock.dart';
 import 'package:photos/ui/tools/lock_screen.dart';
 import "package:photos/utils/email_util.dart";
@@ -110,9 +109,6 @@ Future<void> _runInForeground(AdaptiveThemeMode? savedThemeMode) async {
         savedThemeMode: _themeMode(savedThemeMode),
       ),
     );
-    if (Platform.isAndroid) {
-      unawaited(_scheduleFGHomeWidgetSync());
-    }
     unawaited(_scheduleFGSync('appStart in FG'));
   });
 }
@@ -125,13 +121,10 @@ ThemeMode _themeMode(AdaptiveThemeMode? savedThemeMode) {
 }
 
 Future<void> _homeWidgetSync() async {
-  if (!Platform.isAndroid) return;
   try {
-    if (await HomeWidgetService.instance.countHomeWidgets() != 0) {
-      await HomeWidgetService.instance.initHomeWidget();
-    }
+    await HomeWidgetService.instance.initHomeWidget();
   } catch (e, s) {
-    _logger.severe("Error in initSlideshowWidget", e, s);
+    _logger.severe("Error in syncing home widget", e, s);
   }
 }
 
@@ -246,7 +239,6 @@ Future<void> _init(bool isBackground, {String via = ''}) async {
     _logger.info("CollectionsService init done $tlog");
 
     FavoritesService.instance.initFav().ignore();
-    MemoriesService.instance.init(preferences);
     LocalFileUpdateService.instance.init(preferences);
     SearchService.instance.init();
     FileDataService.instance.init(preferences);
@@ -260,16 +252,16 @@ Future<void> _init(bool isBackground, {String via = ''}) async {
     _logger.info("LocalSyncService init done $tlog");
 
     RemoteSyncService.instance.init(preferences);
+    _logger.info("RemoteFileMLService done $tlog");
 
     _logger.info("SyncService init $tlog");
     await SyncService.instance.init(preferences);
     _logger.info("SyncService init done $tlog");
 
-    _logger.info("RemoteFileMLService done $tlog");
-    if (!isBackground &&
-        Platform.isAndroid &&
-        await HomeWidgetService.instance.countHomeWidgets() == 0) {
-      unawaited(HomeWidgetService.instance.initHomeWidget());
+    await HomeWidgetService.instance.init(preferences);
+
+    if (!isBackground) {
+      await _scheduleFGHomeWidgetSync();
     }
 
     if (Platform.isIOS) {

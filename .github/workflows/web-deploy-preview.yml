@@ -15,6 +15,9 @@ on:
                     - "payments"
                     - "photos"
 
+permissions:
+    contents: read
+
 jobs:
     deploy:
         runs-on: ubuntu-latest
@@ -26,8 +29,6 @@ jobs:
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
-              with:
-                  submodules: recursive
 
             - name: Setup node and enable yarn caching
               uses: actions/setup-node@v4

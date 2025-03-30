@@ -717,18 +717,14 @@ const CollectionSortOrderMenu: React.FC<CollectionSortOrderMenuProps> = ({
             anchorEl={overFlowMenuIconRef.current}
             open={open}
             onClose={onClose}
-            MenuListProps={{
-                disablePadding: true,
-                "aria-labelledby": "collection-files-sort",
+            slotProps={{
+                list: {
+                    disablePadding: true,
+                    "aria-labelledby": "collection-files-sort",
+                },
             }}
-            anchorOrigin={{
-                vertical: "bottom",
-                horizontal: "right",
-            }}
-            transformOrigin={{
-                vertical: "top",
-                horizontal: "right",
-            }}
+            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+            transformOrigin={{ vertical: "top", horizontal: "right" }}
         >
             <OverflowMenuOption onClick={handleDescClick}>
                 {t("newest_first")}

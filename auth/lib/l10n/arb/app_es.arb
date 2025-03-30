@@ -506,10 +506,10 @@
   "deleteDuplicates": "Eliminar duplicados",
   "plainHTML": "HTML plano",
   "tellUsWhatYouThink": "Cuéntanos cuál es su opinión",
-  "dropReview": "Danos una reseña en la App/Play Store",
   "supportEnte": "Apoya a <bold-green>ente</bold-green>",
   "giveUsAStarOnGithub": "Danos una estrella en GitHub",
   "free5GB": "5 GB gratis en <bold-green>ente</bold-green> Fotos",
+  "loginWithAuthAccount": "Inicia sesión con tu cuenta de Auth",
   "freeStorageOffer": "10% de descuento en <bold-green>ente</bold-green> fotos",
   "freeStorageOfferDescription": "Usa el cupón \"AUTH\" para obtener un 10% de descuento en el primer año"
 }

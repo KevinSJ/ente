@@ -525,7 +525,6 @@
   "viewLargeFiles": "Fichiers volumineux",
   "viewLargeFilesDesc": "Affichez les fichiers qui consomment le plus de stockage.",
   "noDuplicates": "✨ Aucun doublon",
-  "youveNoDuplicateFilesThatCanBeCleared": "Vous n'avez aucun fichier dédupliqué pouvant être nettoyé",
   "success": "Succès",
   "rateUs": "Évaluez-nous",
   "remindToEmptyDeviceTrash": "Également vide \"récemment supprimé\" de \"Paramètres\" -> \"Stockage\" pour réclamer l'espace libéré",
@@ -1514,12 +1513,6 @@
   "@selectAllShort": {
     "description": "Text that appears in bottom right when you start to select multiple photos. When clicked, it selects all photos."
   },
-  "changeLogMagicSearchImprovementTitle": "Amélioration de la recherche magique",
-  "changeLogMagicSearchImprovementContent": "Nous avons amélioré la recherche magique pour qu'elle soit beaucoup plus rapide. N'attendez plus pour trouver ce que vous cherchez.",
-  "changeLogBackupStatusTitle": "Statut de la Sauvegarde",
-  "changeLogBackupStatusContent": "Nous avons ajouté un journal de tous les fichiers qui ont été envoyés vers Ente, y compris les échecs et la file d'attente.",
-  "changeLogDiscoverTitle": "Découverte",
-  "changeLogDiscoverContent": "Vous cherchez des photos de vos papiers d'identité, des notes ou même des \"memes\" ? Rendez-vous dans l'onglet de recherche et explorez la fonction Découverte. Grâce à notre recherche sémantique vous trouverez des photos qui pourraient être importantes pour vous.\\n\\nDisponible uniquement si vous avez activé l'apprentissage automatique.",
   "selectCoverPhoto": "Sélectionnez la photo de couverture",
   "newLocation": "Nouveau lieu",
   "faceNotClusteredYet": "Ce visage n'a pas encore été regroupé, veuillez revenir plus tard",
@@ -1674,5 +1667,7 @@
   "failed": "Échec",
   "playStream": "Lire le stream",
   "playOriginal": "Lire l'original",
-  "joinAlbumConfirmationDialogBody": "Rejoindre un album rendra votre e-mail visible à ses participants."
+  "joinAlbumConfirmationDialogBody": "Rejoindre un album rendra votre e-mail visible à ses participants.",
+  "selectDate": "Sélectionner la date",
+  "previous": "Précédent"
 }

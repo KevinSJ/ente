@@ -6,6 +6,8 @@ import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
+import "package:photos/db/common/base.dart";
+import "package:photos/db/common/conflict_algo.dart";
 import "package:photos/extensions/stop_watch.dart";
 import 'package:photos/models/backup_status.dart';
 import 'package:photos/models/file/file.dart';
@@ -15,11 +17,9 @@ import 'package:photos/models/location/location.dart';
 import "package:photos/models/metadata/common_keys.dart";
 import "package:photos/services/filter/db_filters.dart";
 import 'package:photos/utils/file_uploader_util.dart';
-import "package:photos/utils/primitive_wrapper.dart";
-import "package:photos/utils/sqlite_util.dart";
 import 'package:sqlite_async/sqlite_async.dart';
 
-class FilesDB {
+class FilesDB with SqlDbBase {
   /*
   Note: columnUploadedFileID and columnCollectionID have to be compared against
   both NULL and -1 because older clients might have entries where the DEFAULT
@@ -76,7 +76,7 @@ class FilesDB {
 //If adding or removing a new column, make sure to update the `_columnNames` list
 //and update `_generateColumnsAndPlaceholdersForInsert` and
 //`_generateUpdateAssignmentsWithPlaceholders`
-  static final migrationScripts = [
+  static final _migrationScripts = [
     ...createTable(filesTable),
     ...alterDeviceFolderToAllowNULL(),
     ...alterTimestampColumnTypes(),
@@ -146,31 +146,8 @@ class FilesDB {
     final String path = join(documentsDirectory.path, _databaseName);
     _logger.info("DB path " + path);
     final database = SqliteDatabase(path: path);
-    await _migrate(database);
-
+    await migrate(database, _migrationScripts);
     return database;
-  }
-
-  Future<void> _migrate(
-    SqliteDatabase database,
-  ) async {
-    final result = await database.execute('PRAGMA user_version');
-    final currentVersion = result[0]['user_version'] as int;
-    final toVersion = migrationScripts.length;
-
-    if (currentVersion < toVersion) {
-      _logger.info("Migrating database from $currentVersion to $toVersion");
-      await database.writeTransaction((tx) async {
-        for (int i = currentVersion + 1; i <= toVersion; i++) {
-          await tx.execute(migrationScripts[i - 1]);
-        }
-        await tx.execute('PRAGMA user_version = $toVersion');
-      });
-    } else if (currentVersion > toVersion) {
-      throw AssertionError(
-        "currentVersion($currentVersion) cannot be greater than toVersion($toVersion)",
-      );
-    }
   }
 
   // SQL code to create the database table
@@ -468,72 +445,61 @@ class FilesDB {
     final startTime = DateTime.now();
     final db = await sqliteAsyncDB;
 
-    ///Strong batch counter in an object so that it gets passed by reference
-    ///Primitives are passed by value
-    final genIdNotNullbatchCounter = PrimitiveWrapper(0);
-    final genIdNullbatchCounter = PrimitiveWrapper(0);
-    final genIdNullParameterSets = <List<Object?>>[];
-    final genIdNotNullParameterSets = <List<Object?>>[];
+    final withIdParams = <List<Object?>>[];
+    const withIdColumnNames = _columnNames;
+    final withoutIdParams = <List<Object?>>[];
+    final withoutIdColumns =
+        _columnNames.where((column) => column != columnGeneratedID).toList();
 
-    final genIdNullcolumnNames =
-        _columnNames.where((element) => element != columnGeneratedID);
+    // Sort files into appropriate parameter sets
+    for (final file in files) {
+      if (file.generatedID == null) {
+        withoutIdParams.add(_getParameterSetForFile(file));
 
-    for (EnteFile file in files) {
-      final fileGenIdIsNull = file.generatedID == null;
-
-      if (!fileGenIdIsNull) {
-        await _batchAndInsertFile(
-          file,
-          conflictAlgorithm,
-          db,
-          genIdNotNullParameterSets,
-          genIdNotNullbatchCounter,
-          isGenIdNull: fileGenIdIsNull,
-        );
+        if (withoutIdParams.length == 400) {
+          await _insertBatch(
+            conflictAlgorithm,
+            withoutIdColumns,
+            db,
+            withoutIdParams,
+          );
+          withoutIdParams.clear();
+        }
       } else {
-        await _batchAndInsertFile(
-          file,
-          conflictAlgorithm,
-          db,
-          genIdNullParameterSets,
-          genIdNullbatchCounter,
-          isGenIdNull: fileGenIdIsNull,
-        );
+        withIdParams.add(_getParameterSetForFile(file));
+        if (withIdParams.length == 400) {
+          await _insertBatch(
+            conflictAlgorithm,
+            withIdColumnNames,
+            db,
+            withIdParams,
+          );
+          withIdParams.clear();
+        }
       }
     }
 
-    if (genIdNotNullbatchCounter.value > 0) {
+    // Insert any remaining files
+    if (withIdParams.isNotEmpty) {
       await _insertBatch(
         conflictAlgorithm,
-        _columnNames,
+        withIdColumnNames,
         db,
-        genIdNotNullParameterSets,
+        withIdParams,
       );
-      genIdNotNullbatchCounter.value = 0;
-      genIdNotNullParameterSets.clear();
-    }
-    if (genIdNullbatchCounter.value > 0) {
-      await _insertBatch(
-        conflictAlgorithm,
-        genIdNullcolumnNames,
-        db,
-        genIdNullParameterSets,
-      );
-      genIdNullbatchCounter.value = 0;
-      genIdNullParameterSets.clear();
     }
 
-    final endTime = DateTime.now();
-    final duration = Duration(
-      microseconds:
-          endTime.microsecondsSinceEpoch - startTime.microsecondsSinceEpoch,
-    );
+    if (withoutIdParams.isNotEmpty) {
+      await _insertBatch(
+        conflictAlgorithm,
+        withoutIdColumns,
+        db,
+        withoutIdParams,
+      );
+    }
+    final duration = DateTime.now().difference(startTime);
     _logger.info(
-      "Batch insert of " +
-          files.length.toString() +
-          " took " +
-          duration.inMilliseconds.toString() +
-          "ms.",
+      "Batch insert of ${files.length} took ${duration.inMilliseconds}ms.",
     );
   }
 
@@ -1272,15 +1238,26 @@ class FilesDB {
     );
   }
 
-  Future<List<EnteFile>> getLocalFiles(List<String> localIDs) async {
+  Future<List<EnteFile>> getLocalFiles(
+    List<String> localIDs, {
+    bool dedupeByLocalID = false,
+  }) async {
+    late final String query;
     final inParam = localIDs.map((id) => "'$id'").join(',');
     final db = await instance.sqliteAsyncDB;
-    final results = await db.getAll(
-      '''
+    if (dedupeByLocalID) {
+      query = '''
+      SELECT * FROM $filesTable
+      WHERE $columnLocalID IN ($inParam)
+      GROUP BY $columnLocalID;
+    ''';
+    } else {
+      query = '''
       SELECT * FROM $filesTable
       WHERE $columnLocalID IN ($inParam);
-    ''',
-    );
+    ''';
+    }
+    final results = await db.getAll(query);
     return convertToFiles(results);
   }
 
@@ -1941,28 +1918,6 @@ class FilesDB {
     }
 
     return values;
-  }
-
-  Future<void> _batchAndInsertFile(
-    EnteFile file,
-    SqliteAsyncConflictAlgorithm conflictAlgorithm,
-    SqliteDatabase db,
-    List<List<Object?>> parameterSets,
-    PrimitiveWrapper batchCounter, {
-    required bool isGenIdNull,
-  }) async {
-    parameterSets.add(_getParameterSetForFile(file));
-    batchCounter.value++;
-
-    final columnNames = isGenIdNull
-        ? _columnNames.where((column) => column != columnGeneratedID)
-        : _columnNames;
-    if (batchCounter.value == 400) {
-      _logger.info("Inserting batch with genIdNull: $isGenIdNull");
-      await _insertBatch(conflictAlgorithm, columnNames, db, parameterSets);
-      batchCounter.value = 0;
-      parameterSets.clear();
-    }
   }
 
   Future<void> _insertBatch(

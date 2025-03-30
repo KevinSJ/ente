@@ -133,8 +133,10 @@ For showing the app's UI in multiple languages, we use the
 [i18next](https://www.i18next.com), specifically its three components
 
 - [i18next](https://github.com/i18next/i18next): The core `i18next` library.
+
 - [react-i18next](https://github.com/i18next/react-i18next): React specific
   support in `i18next`.
+
 - [i18next-http-backend](https://github.com/i18next/i18next-http-backend): Adds
   support for initializing `i18next` with JSON file containing the translation
   in a particular language, fetched at runtime.
@@ -173,7 +175,9 @@ via [@fontsource-variable/inter](https://fontsource.org/fonts/inter/install).
   layer on top of web workers to make them more easier to use.
 
 - [idb](https://github.com/jakearchibald/idb) provides a promise API over the
-  browser-native IndexedDB APIs.
+  browser-native IndexedDB APIs. Older code (the file and collection store),
+  uses [localForage](https://github.com/localForage/localForage) for IndexedDB
+  access.
 
     > For more details about IDB and its role, see [storage.md](storage.md).
 
@@ -218,6 +222,25 @@ via [@fontsource-variable/inter](https://fontsource.org/fonts/inter/install).
   (much more) details, see [heic.md](heic.md).
 
 ## Photos app specific
+
+- [PhotoSwipe](https://photoswipe.com) provides the base image viewer on top of
+  which we've built our file viewer.
+
+- For streaming video (HLS), we use three libraries:
+
+    1. [media-chrome](https://github.com/muxinc/media-chrome) provides custom
+       video controls which we use when playing HLS playlists (we use custom
+       controls to provide a standardized UX across browsers, but really the
+       main reason is that Safari's default video controls are on the verge of
+       unusable, especially for streaming playback),
+
+    2. [hls-video-element](https://github.com/muxinc/media-elements/tree/main/packages/hls-video-element)
+       provides a custom web component element that glues media-chrome and
+       hls.js together, and
+
+    3. [hls.js](https://github.com/video-dev/hls.js/) (indirect dependency via
+       hls-video-element) is needed on HLS playback on Chrome and Firefox (which
+       do not have native support for HLS playlists).
 
 - [react-dropzone](https://github.com/react-dropzone/react-dropzone/) is a React
   hook to create a drag-and-drop input zone. Note that we pin to the last

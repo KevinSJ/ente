@@ -6,7 +6,7 @@ import { isDesktop } from "@/base/app";
 import { blobCache } from "@/base/blob-cache";
 import { ensureElectron } from "@/base/electron";
 import log from "@/base/log";
-import { masterKeyFromSession } from "@/base/session-store";
+import { masterKeyFromSession } from "@/base/session";
 import type { Electron } from "@/base/types/ipc";
 import { ComlinkWorker } from "@/base/worker/comlink-worker";
 import type { UploadItem } from "@/gallery/services/upload";
@@ -654,6 +654,8 @@ export interface AnnotatedFaceID {
 export const getAnnotatedFacesForFile = async (
     file: EnteFile,
 ): Promise<AnnotatedFaceID[]> => {
+    if (!isMLEnabled()) return [];
+
     const index = await savedFaceIndex(file.id);
     if (!index) return [];
 
@@ -737,11 +739,7 @@ export const addCGroup = async (name: string, cluster: FaceCluster) => {
     const masterKey = await masterKeyFromSession();
     const id = await addUserEntity(
         "cgroup",
-        {
-            name,
-            assigned: [cluster],
-            isHidden: false,
-        },
+        { name, assigned: [cluster], isHidden: false },
         masterKey,
     );
     await mlSync();
@@ -841,11 +839,7 @@ export const ignoreCluster = async (cluster: FaceCluster) => {
     const masterKey = await masterKeyFromSession();
     await addUserEntity(
         "cgroup",
-        {
-            name: "",
-            assigned: [cluster],
-            isHidden: true,
-        },
+        { name: "", assigned: [cluster], isHidden: true },
         masterKey,
     );
     return mlSync();

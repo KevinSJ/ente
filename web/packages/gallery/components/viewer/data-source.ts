@@ -1,3 +1,4 @@
+import { isDevBuild } from "@/base/env";
 import log from "@/base/log";
 import type { FileInfoExif } from "@/gallery/components/FileInfo";
 import {
@@ -5,7 +6,9 @@ import {
     type LivePhotoSourceURL,
 } from "@/gallery/services/download";
 import { extractRawExif, parseExif } from "@/gallery/services/exif";
+import { hlsPlaylistDataForFile } from "@/gallery/services/video";
 import type { EnteFile } from "@/media/file";
+import { fileCaption } from "@/media/file-metadata";
 import { FileType } from "@/media/file-type";
 import { ensureString } from "@/utils/ensure";
 
@@ -37,6 +40,20 @@ interface PhotoSwipeSlideData {
      * The height (in pixels) of the {@link src} image.
      */
     height?: number | undefined;
+    /**
+     * The alt text associated with the file.
+     *
+     * This will be set to the file's caption. PhotoSwipe will use it as the alt
+     * text when constructing img elements (if any) for this item. We will also
+     * use this for displaying the visible "caption" element atop the file (both
+     * images and video).
+     */
+    alt?: string;
+    /**
+     * The HTML (string) contents of the slide, if we don't wish for it to show
+     * an image.
+     */
+    html?: string | undefined;
 }
 
 /**
@@ -65,14 +82,45 @@ export type ItemData = PhotoSwipeSlideData & {
      */
     imageURL?: string;
     /**
+     * The original image associated with the file, as a Blob.
+     *
+     * - For images, this will be the original image itself.
+     * - For live photos, this will be the image component of the live photo.
+     * - For videos, this will be not be present.
+     */
+    originalImageBlob?: Blob;
+    /**
      * The renderable object URL of the video associated with the file.
      *
      * - For images, this will not be defined.
-     * - For videos, this will be the object URL of a renderable video.
+     * - For videos, this will be the object URL of a renderable video (but only
+     *   if {@link videoPlaylistURL} is not set).
      * - For live photos, this will be a renderable object URL of the video
      *   portion of the live photo.
      */
     videoURL?: string;
+    /**
+     * The object URL to an HLS playlist that can be used to play the video
+     * associated with the file in a streaming manner.
+     *
+     * This will only be defined for videos for which a corresponding streamable
+     * version has been created.
+     *
+     * Only one of {@link videoURL} or {@link videoPlaylistURL} will be set at a
+     * time.
+     */
+    videoPlaylistURL?: string;
+    /**
+     * The DOM element ID of the `media-controller` element that is showing the
+     * video for the current item.
+     *
+     * If present, this value will be used to display controls for controlling
+     * the video wrapped by the media-controller.
+     *
+     * This is only set for videos that are streamed using HLS (i.e. videos for
+     * which {@link videoPlaylistURL} has also been set).
+     */
+    mediaControllerID?: string;
     /**
      * `true` if we should indicate to the user that we're still fetching data
      * for this file.
@@ -110,6 +158,19 @@ export type ItemData = PhotoSwipeSlideData & {
  */
 class FileViewerDataSourceState {
     /**
+     * Non-zero if a file viewer is currently open.
+     *
+     * This is a counter, but the file viewer data source has other many
+     * assumptions about only a single instance of PhotoSwipe being active at a
+     * time, so this could've been a boolean as well.
+     */
+    viewerCount = 0;
+    /**
+     * True if our state needs to be cleared the next time the file viewer is
+     * closed.
+     */
+    needsReset = false;
+    /**
      * The best data we have for a particular file (ID).
      */
     itemDataByFileID = new Map<number, ItemData>();
@@ -136,16 +197,63 @@ class FileViewerDataSourceState {
  */
 let _state = new FileViewerDataSourceState();
 
-/**
- * Clear any internal state maintained by the file viewer data source.
- */
-// TODO(PS): Call me during logout sequence once this is integrated.
-export const logoutFileViewerDataSource = () => {
+const resetState = () => {
     _state = new FileViewerDataSourceState();
 };
 
 /**
- * Return the best available ItemData for rendering the given {@link file}.
+ * Clear any internal state maintained by the file viewer data source.
+ */
+export const logoutFileViewerDataSource = resetState;
+
+/**
+ * Clear any internal state if possible. This is invoked when files have been
+ * updated on remote, and those changes synced locally.
+ *
+ * Because we also retain callbacks, clearing existing item data when the file
+ * viewer is open can lead to problematic edge cases. Thus, this function
+ * behaves in two different ways:
+ *
+ * - If the file viewer is already open, then we enqueue a reset for when it is
+ *   closed the next time.
+ *
+ * - Otherwise we immediately reset our state.
+ *
+ * See: [Note: Changes to underlying files when file viewer is open]
+ */
+export const resetFileViewerDataSourceOnClose = () => {
+    if (_state.viewerCount) {
+        _state.needsReset = true;
+    } else {
+        resetState();
+    }
+};
+
+/**
+ * Called by the file viewer whenever it is opened.
+ */
+export const fileViewerWillOpen = () => {
+    _state.viewerCount++;
+};
+
+/**
+ * Called by the file viewer whenever it has been closed.
+ */
+export const fileViewerDidClose = () => {
+    _state.viewerCount--;
+    if (_state.needsReset && _state.viewerCount == 0) {
+        // Reset everything.
+        resetState();
+    } else {
+        // Selectively clear.
+        forgetFailedItems();
+        forgetExif();
+    }
+};
+
+/**
+ * Return the best available {@link ItemData} for rendering the given
+ * {@link file}.
  *
  * If an entry does not exist for a particular file, then it is lazily added on
  * demand, and updated as we keep getting better data (thumbnail, original) for
@@ -181,7 +289,7 @@ export const logoutFileViewerDataSource = () => {
  * - For images and videos, this will be the single original.
  *
  * - For live photos, this will also be a two step process, first fetching the
- *   original image, then again the video component.
+ *   video component, then fetching the image component.
  *
  * At this point, the data for this file will be considered final, and
  * subsequent calls for the same file will return this same value unless it is
@@ -216,8 +324,24 @@ export const itemDataForFile = (file: EnteFile, needsRefresh: () => void) => {
  * This is called when the user moves away from a slide so that we attempt a
  * full retry when they come back the next time.
  */
-export const forgetFailedItemDataForFile = (file: EnteFile) =>
-    forgetFailedItemDataForFileID(file.id);
+export const forgetFailedItemDataForFileID = (fileID: number) => {
+    if (_state.itemDataByFileID.get(fileID)?.fetchFailed) {
+        _state.itemDataByFileID.delete(fileID);
+    }
+};
+
+/**
+ * Update the alt attribute of the {@link ItemData}, if any, associated with the
+ * given {@link EnteFile}.
+ *
+ * @param updatedFile The file whose caption was updated.
+ */
+export const updateItemDataAlt = (updatedFile: EnteFile) => {
+    const itemData = _state.itemDataByFileID.get(updatedFile.id);
+    if (itemData) {
+        itemData.alt = fileCaption(updatedFile);
+    }
+};
 
 /**
  * Forget item data for the all files whose fetch had failed.
@@ -225,21 +349,24 @@ export const forgetFailedItemDataForFile = (file: EnteFile) =>
  * This is called when the user closes the file viewer so that we attempt a full
  * retry when they reopen the viewer the next time.
  */
-export const forgetFailedItems = () =>
+const forgetFailedItems = () =>
     [..._state.itemDataByFileID.keys()].forEach(forgetFailedItemDataForFileID);
-
-const forgetFailedItemDataForFileID = (fileID: number) => {
-    if (_state.itemDataByFileID.get(fileID)?.fetchFailed) {
-        _state.itemDataByFileID.delete(fileID);
-    }
-};
 
 const enqueueUpdates = async (file: EnteFile) => {
     const fileID = file.id;
     const fileType = file.metadata.fileType;
 
     const update = (itemData: Partial<ItemData>) => {
-        _state.itemDataByFileID.set(file.id, { ...itemData, fileType, fileID });
+        // Use the file's caption as its alt text (in addition to using it as
+        // the visible caption).
+        const alt = fileCaption(file);
+
+        _state.itemDataByFileID.set(file.id, {
+            ...itemData,
+            fileType,
+            fileID,
+            alt,
+        });
         _state.needsRefreshByFileID.get(file.id)?.();
     };
 
@@ -257,7 +384,9 @@ const enqueueUpdates = async (file: EnteFile) => {
         // While the types don't reflect it, it is safe to use the ! (null
         // assertion) here since renderableThumbnailURL can throw but will not
         // return undefined by default.
-        const thumbnailData = await withDimensions(ensureString(thumbnailURL));
+        const thumbnailData = await withDimensionsIfPossible(
+            ensureString(thumbnailURL),
+        );
         update({
             ...thumbnailData,
             isContentLoading: true,
@@ -283,15 +412,33 @@ const enqueueUpdates = async (file: EnteFile) => {
                 const sourceURLs =
                     await downloadManager.renderableSourceURLs(file);
                 const imageURL = ensureString(sourceURLs.url);
-                const itemData = await withDimensions(imageURL);
-                update({ ...itemData, imageURL });
+                const originalImageBlob = sourceURLs.originalImageBlob!;
+                const itemData = await withDimensionsIfPossible(imageURL);
+                update({ ...itemData, imageURL, originalImageBlob });
                 break;
             }
 
             case FileType.video: {
+                if (
+                    isDevBuild &&
+                    process.env.NEXT_PUBLIC_ENTE_WIP_VIDEO_STREAMING
+                ) {
+                    if (file.metadata.fileType == FileType.video) {
+                        const playlistData = await hlsPlaylistDataForFile(file);
+                        if (playlistData) {
+                            const {
+                                playlistURL: videoPlaylistURL,
+                                width,
+                                height,
+                            } = playlistData;
+                            update({ videoPlaylistURL, width, height });
+                            break;
+                        }
+                    }
+                }
+
                 const sourceURLs =
                     await downloadManager.renderableSourceURLs(file);
-                // TODO(PS):
                 update({ videoURL: sourceURLs.url as string });
                 break;
             }
@@ -301,11 +448,32 @@ const enqueueUpdates = async (file: EnteFile) => {
                     await downloadManager.renderableSourceURLs(file);
                 const livePhotoSourceURLs =
                     sourceURLs.url as LivePhotoSourceURL;
-                const imageURL = await livePhotoSourceURLs.image();
-                const imageData = await withDimensions(ensureString(imageURL));
-                update(imageData);
+                // The image component of a live photo usually is an HEIC file,
+                // which cannot be displayed natively by browsers and needs a
+                // conversion, which is slow on web (faster on desktop). We
+                // already have both components available since they're part of
+                // the same zip. And in the UI, the first (default) interaction
+                // is to loop the live video.
+                //
+                // For these reasons, we resolve with the video first, then
+                // resolve with the image.
                 const videoURL = await livePhotoSourceURLs.video();
-                update({ ...imageData, videoURL });
+                update({
+                    videoURL,
+                    isContentLoading: true,
+                    isContentZoomable: false,
+                });
+                const imageURL = ensureString(
+                    await livePhotoSourceURLs.image(),
+                );
+                const originalImageBlob =
+                    livePhotoSourceURLs.originalImageBlob()!;
+                update({
+                    ...(await withDimensionsIfPossible(imageURL)),
+                    imageURL,
+                    originalImageBlob,
+                    videoURL,
+                });
                 break;
             }
         }
@@ -334,12 +502,19 @@ const enqueueUpdates = async (file: EnteFile) => {
 };
 
 /**
- * Take a image URL, determine its dimensions using browser APIs, and return the URL
- * and its dimensions in a form that can directly be passed to PhotoSwipe as
- * {@link ItemData}.
+ * Take a image URL, determine its dimensions using browser APIs if possible,
+ * and return the URL and its dimensions in a form that can directly be passed
+ * to PhotoSwipe as {@link ItemData}.
+ *
+ * If the dimensions cannot be extracted (i.e., the browser was not able to load
+ * the image), then PhotoSwipe itself will also not likely be able to render it,
+ * but we still return the {@link imageURL} back so that PhotoSwipe can show the
+ * appropriate error when trying to render it.
  */
-const withDimensions = (imageURL: string): Promise<Partial<ItemData>> =>
-    new Promise((resolve, reject) => {
+const withDimensionsIfPossible = (
+    imageURL: string,
+): Promise<Partial<ItemData>> =>
+    new Promise((resolve) => {
         const image = new Image();
         image.onload = () =>
             resolve({
@@ -347,7 +522,7 @@ const withDimensions = (imageURL: string): Promise<Partial<ItemData>> =>
                 width: image.naturalWidth,
                 height: image.naturalHeight,
             });
-        image.onerror = reject;
+        image.onerror = () => resolve({ src: imageURL });
         image.src = imageURL;
     });
 
@@ -390,7 +565,7 @@ export const fileInfoExifForFile = (
  *
  * This function is expected to be called when an item is loaded as PhotoSwipe
  * content. It can be safely called multiple times - it will ignore calls until
- * the item has an associated {@link imageURL}, and it will also ignore calls
+ * the item has an associated {@link originalImageBlob}, and it will also ignore calls
  * that are made after exif data has already been extracted.
  *
  * If required, it will extract the exif data from the file, massage it to a
@@ -401,7 +576,7 @@ export const fileInfoExifForFile = (
  * See also {@link forgetExifForItemData}.
  */
 export const updateFileInfoExifIfNeeded = async (itemData: ItemData) => {
-    const { fileID, fileType, imageURL } = itemData;
+    const { fileID, fileType, originalImageBlob } = itemData;
 
     // We already have it available.
     if (_state.fileInfoExifByFileID.has(fileID)) return;
@@ -418,11 +593,10 @@ export const updateFileInfoExifIfNeeded = async (itemData: ItemData) => {
     }
 
     // This is not a video, but the original image is not available yet.
-    if (!imageURL) return;
+    if (!originalImageBlob) return;
 
     try {
-        const blob = await (await fetch(imageURL)).blob();
-        const file = new File([blob], "");
+        const file = new File([originalImageBlob], "");
         const tags = await extractRawExif(file);
         const parsed = parseExif(tags);
         return updateNotifyAndReturn({ tags, parsed });

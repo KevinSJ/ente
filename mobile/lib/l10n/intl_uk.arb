@@ -520,7 +520,6 @@
   "viewLargeFiles": "Великі файли",
   "viewLargeFilesDesc": "Перегляньте файли, які займають найбільше місця у сховищі.",
   "noDuplicates": "✨ Немає дублікатів",
-  "youveNoDuplicateFilesThatCanBeCleared": "У вас немає дублікатів файлів, які можна очистити",
   "success": "Успішно",
   "rateUs": "Оцініть нас",
   "remindToEmptyDeviceTrash": "Також очистьте «Нещодавно видалено» в «Налаштування» -> «Сховище», щоб отримати вільне місце",
@@ -1508,12 +1507,6 @@
   "@selectAllShort": {
     "description": "Text that appears in bottom right when you start to select multiple photos. When clicked, it selects all photos."
   },
-  "changeLogMagicSearchImprovementTitle": "Покращення магічного пошуку",
-  "changeLogMagicSearchImprovementContent": "Ми вдосконалили магічний пошук, щоб він став набагато швидше, тож вам не доведеться чекати, щоб знайти те, що хочеться.",
-  "changeLogBackupStatusTitle": "Стан резервних копій",
-  "changeLogBackupStatusContent": "Ми додали журнал всіх файлів, які були завантажені на Ente, включаючи помилки та поставлені в чергу.",
-  "changeLogDiscoverTitle": "Дізнайтеся",
-  "changeLogDiscoverContent": "Шукаєте фотографії своїх посвідчень особи, нотаток або навіть мемів? Перейдіть на вкладку «Пошук» і перевірте «Дізнайтеся». На основі нашого семантичного пошуку тут можна знайти фотографії, які можуть бути важливими для вас.\\n\\nДоступно лише за умови увімкненого машинного навчання.",
   "selectCoverPhoto": "Вибрати обкладинку",
   "newLocation": "Нове розташування",
   "faceNotClusteredYet": "Обличчя ще не згруповані, поверніться пізніше",

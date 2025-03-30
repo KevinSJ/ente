@@ -13,7 +13,7 @@ import 'package:photos/core/error-reporting/super_logging.dart';
 import 'package:photos/core/event_bus.dart';
 import 'package:photos/db/collections_db.dart';
 import 'package:photos/db/files_db.dart';
-import 'package:photos/db/memories_db.dart';
+import "package:photos/db/memories_db.dart";
 import "package:photos/db/ml/db.dart";
 import 'package:photos/db/trash_db.dart';
 import 'package:photos/db/upload_locks_db.dart';
@@ -28,9 +28,8 @@ import 'package:photos/services/favorites_service.dart';
 import "package:photos/services/home_widget_service.dart";
 import 'package:photos/services/ignored_files_service.dart';
 import "package:photos/services/machine_learning/face_ml/person/person_service.dart";
-import 'package:photos/services/memories_service.dart';
 import 'package:photos/services/search_service.dart';
-import 'package:photos/services/sync_service.dart';
+import 'package:photos/services/sync/sync_service.dart';
 import 'package:photos/utils/file_uploader.dart';
 import "package:photos/utils/lock_screen_settings.dart";
 import 'package:photos/utils/validator_util.dart';
@@ -81,10 +80,6 @@ class Configuration {
   late FlutterSecureStorage _secureStorage;
   late String _tempDocumentsDirPath;
   late String _thumbnailCacheDirectory;
-  // 6th July 22: Remove this after 3 months. Hopefully, active users
-  // will migrate to newer version of the app, where shared media is stored
-  // on appSupport directory which OS won't clean up automatically
-  late String _sharedTempMediaDirectory;
 
   late String _sharedDocumentsMediaDirectory;
   String? _volatilePassword;
@@ -105,8 +100,6 @@ class Configuration {
       final tempDirectoryPath = (await getTemporaryDirectory()).path;
       _thumbnailCacheDirectory = tempDirectoryPath + "/thumbnail-cache";
       Directory(_thumbnailCacheDirectory).createSync(recursive: true);
-      _sharedTempMediaDirectory = tempDirectoryPath + "/ente-shared-media";
-      Directory(_sharedTempMediaDirectory).createSync(recursive: true);
       _sharedDocumentsMediaDirectory =
           _documentsDirectory + "/ente-shared-media";
       Directory(_sharedDocumentsMediaDirectory).createSync(recursive: true);
@@ -210,15 +203,14 @@ class Configuration {
     await UploadLocksDB.instance.clearTable();
     await IgnoredFilesService.instance.reset();
     await TrashDB.instance.clearTable();
+    unawaited(HomeWidgetService.instance.clearWidget(autoLogout));
     if (!autoLogout) {
       // Following services won't be initialized if it's the case of autoLogout
       FileUploader.instance.clearCachedUploadURLs();
       CollectionsService.instance.clearCache();
       FavoritesService.instance.clearCache();
-      MemoriesService.instance.clearCache();
       SearchService.instance.clearCache();
       PersonService.instance.clearCache();
-      unawaited(HomeWidgetService.instance.clearHomeWidget());
       Bus.instance.fire(UserLoggedOutEvent());
     } else {
       await _preferences.setBool("auto_logout", true);
@@ -559,10 +551,6 @@ class Configuration {
 
   String getThumbnailCacheDirectory() {
     return _thumbnailCacheDirectory;
-  }
-
-  String getOldSharedMediaCacheDirectory() {
-    return _sharedTempMediaDirectory;
   }
 
   String getSharedMediaDirectory() {

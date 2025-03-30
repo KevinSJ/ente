@@ -43,7 +43,6 @@ import { CenteredFlex } from "@ente/shared/components/Container";
 import SingleInputForm, {
     type SingleInputFormProps,
 } from "@ente/shared/components/SingleInputForm";
-import { PHOTOS_PAGES as PAGES } from "@ente/shared/constants/pages";
 import { CustomError, parseSharingErrorCodes } from "@ente/shared/error";
 import AddPhotoAlternateOutlinedIcon from "@mui/icons-material/AddPhotoAlternateOutlined";
 import CloseIcon from "@mui/icons-material/Close";
@@ -51,16 +50,16 @@ import DownloadIcon from "@mui/icons-material/Download";
 import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import { Box, Button, IconButton, Stack, styled, Tooltip } from "@mui/material";
 import Typography from "@mui/material/Typography";
+import { TimeStampListItem } from "components/FileList";
+import { FileListWithViewer } from "components/FileListWithViewer";
 import {
     FilesDownloadProgress,
     FilesDownloadProgressAttributes,
 } from "components/FilesDownloadProgress";
-import PhotoFrame from "components/PhotoFrame";
-import { ITEM_TYPE, TimeStampListItem } from "components/PhotoList";
 import { Upload } from "components/Upload";
 import { t } from "i18next";
 import { useRouter } from "next/router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type FileWithPath } from "react-dropzone";
 import {
     getLocalPublicCollection,
@@ -124,8 +123,8 @@ export default function PublicCollectionGallery() {
     ] = useState<FilesDownloadProgressAttributes[]>([]);
 
     const setFilesDownloadProgressAttributesCreator: SetFilesDownloadProgressAttributesCreator =
-        (folderName, collectionID, isHidden) => {
-            const id = filesDownloadProgressAttributesList?.length ?? 0;
+        useCallback((folderName, collectionID, isHidden) => {
+            const id = Math.random();
             const updater: SetFilesDownloadProgressAttributes = (value) => {
                 setFilesDownloadProgressAttributesList((prev) => {
                     const attributes = prev?.find((attr) => attr.id === id);
@@ -154,7 +153,7 @@ export default function PublicCollectionGallery() {
                 downloadDirPath: null,
             });
             return updater;
-        };
+        }, []);
 
     const onAddPhotos = useMemo(() => {
         return publicCollection?.publicURLs?.[0]?.enableCollect
@@ -185,7 +184,7 @@ export default function PublicCollectionGallery() {
         if (currentURL.pathname !== "/") {
             router.replace(
                 {
-                    pathname: PAGES.SHARED_ALBUMS,
+                    pathname: "/shared-albums",
                     search: currentURL.search,
                     hash: currentURL.hash,
                 },
@@ -194,9 +193,7 @@ export default function PublicCollectionGallery() {
                     search: currentURL.search,
                     hash: currentURL.hash,
                 },
-                {
-                    shallow: true,
-                },
+                { shallow: true },
             );
         }
         const main = async () => {
@@ -268,7 +265,7 @@ export default function PublicCollectionGallery() {
                         }}
                     />
                 ),
-                itemType: ITEM_TYPE.HEADER,
+                tag: "header",
                 height: 68,
             });
     }, [publicCollection, publicFiles]);
@@ -282,14 +279,13 @@ export default function PublicCollectionGallery() {
                               <AddMorePhotosButton onClick={onAddPhotos} />
                           </CenteredFlex>
                       ),
-                      itemType: ITEM_TYPE.FOOTER,
                       height: 104,
                   }
                 : null,
         );
     }, [onAddPhotos]);
 
-    const syncWithRemote = async () => {
+    const handleSyncWithRemote = useCallback(async () => {
         const collectionUID = getPublicCollectionUID(
             credentials.current.accessToken,
         );
@@ -369,7 +365,16 @@ export default function PublicCollectionGallery() {
             hideLoadingBar();
             setLoading(false);
         }
-    };
+    }, [showLoadingBar, hideLoadingBar]);
+
+    // TODO: See gallery
+    const syncWithRemote = handleSyncWithRemote;
+
+    // See: [Note: Visual feedback to acknowledge user actions]
+    const handleVisualFeedback = useCallback(() => {
+        showLoadingBar();
+        setTimeout(hideLoadingBar, 0);
+    }, [showLoadingBar, hideLoadingBar]);
 
     const verifyLinkPassword: SingleInputFormProps["callback"] = async (
         password,
@@ -508,19 +513,18 @@ export default function PublicCollectionGallery() {
                     )}
                 </NavbarBase>
 
-                <PhotoFrame
+                <FileListWithViewer
                     files={publicFiles}
-                    syncWithRemote={syncWithRemote}
-                    setSelected={setSelected}
-                    selected={selected}
-                    activeCollectionID={ALL_SECTION}
                     enableDownload={downloadEnabled}
-                    fileCollectionIDs={undefined}
-                    allCollectionsNameByID={undefined}
+                    selectable={downloadEnabled}
+                    selected={selected}
+                    setSelected={setSelected}
+                    activeCollectionID={ALL_SECTION}
                     setFilesDownloadProgressAttributesCreator={
                         setFilesDownloadProgressAttributesCreator
                     }
-                    selectable={downloadEnabled}
+                    onSyncWithRemote={handleSyncWithRemote}
+                    onVisualFeedback={handleVisualFeedback}
                 />
                 {blockingLoad && <TranslucentLoadingOverlay />}
                 <Upload
@@ -535,9 +539,7 @@ export default function PublicCollectionGallery() {
                     closeUploadTypeSelector={closeUploadTypeSelectorView}
                     showSessionExpiredMessage={showPublicLinkExpiredMessage}
                     uploadTypeSelectorIntent="collect"
-                    {...{
-                        dragAndDropFiles,
-                    }}
+                    {...{ dragAndDropFiles }}
                 />
                 <FilesDownloadProgress
                     attributesList={filesDownloadProgressAttributesList}
@@ -552,9 +554,7 @@ const EnteLogoLink = styled("a")(({ theme }) => ({
     // Remove the excess space at the top.
     svg: { verticalAlign: "middle" },
     color: theme.vars.palette.text.base,
-    ":hover": {
-        color: theme.vars.palette.accent.main,
-    },
+    ":hover": { color: theme.vars.palette.accent.main },
 }));
 
 const AddPhotosButton: React.FC<ButtonishProps> = ({ onClick }) => {

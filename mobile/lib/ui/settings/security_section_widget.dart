@@ -12,9 +12,9 @@ import 'package:photos/events/two_factor_status_change_event.dart';
 import "package:photos/generated/l10n.dart";
 import "package:photos/l10n/l10n.dart";
 import "package:photos/models/user_details.dart";
+import "package:photos/services/account/passkey_service.dart";
+import 'package:photos/services/account/user_service.dart';
 import 'package:photos/services/local_authentication_service.dart';
-import "package:photos/services/passkey_service.dart";
-import 'package:photos/services/user_service.dart';
 import 'package:photos/theme/ente_theme.dart';
 import "package:photos/ui/account/request_pwd_verification_page.dart";
 import 'package:photos/ui/account/sessions_page.dart';
@@ -22,12 +22,12 @@ import 'package:photos/ui/components/captioned_text_widget.dart';
 import 'package:photos/ui/components/expandable_menu_item_widget.dart';
 import 'package:photos/ui/components/menu_item_widget/menu_item_widget.dart';
 import 'package:photos/ui/components/toggle_switch_widget.dart';
+import "package:photos/ui/notification/toast.dart";
 import 'package:photos/ui/settings/common_settings.dart';
 import "package:photos/ui/settings/lock_screen/lock_screen_options.dart";
 import "package:photos/utils/auth_util.dart";
 import "package:photos/utils/dialog_util.dart";
-import "package:photos/utils/navigation_util.dart";
-import "package:photos/utils/toast_util.dart";
+import 'package:photos/utils/navigation_util.dart';
 
 class SecuritySectionWidget extends StatefulWidget {
   const SecuritySectionWidget({super.key});

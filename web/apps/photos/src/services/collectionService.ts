@@ -8,12 +8,12 @@ import {
     CollectionMagicMetadata,
     CollectionMagicMetadataProps,
     CollectionPublicMagicMetadata,
-    CollectionType,
+    CollectionSubType,
+    type CollectionType,
     CreatePublicAccessTokenRequest,
     EncryptedCollection,
     PublicURL,
     RemoveFromCollectionRequest,
-    SUB_TYPE,
     UpdatePublicURL,
 } from "@/media/collection";
 import { EncryptedMagicMetadata, EnteFile } from "@/media/file";
@@ -40,7 +40,7 @@ import {
 import type { FamilyData } from "@/new/photos/services/user-details";
 import { batch } from "@/utils/array";
 import HTTPService from "@ente/shared/network/HTTPService";
-import { LS_KEYS, getData } from "@ente/shared/storage/localStorage";
+import { getData } from "@ente/shared/storage/localStorage";
 import { getToken } from "@ente/shared/storage/localStorage/helpers";
 import { getActualKey } from "@ente/shared/user";
 import type { User } from "@ente/shared/user/types";
@@ -58,7 +58,7 @@ const FAVORITE_COLLECTION_NAME = "Favorites";
 const REQUEST_BATCH_SIZE = 1000;
 
 export const createAlbum = (albumName: string) => {
-    return createCollection(albumName, CollectionType.album);
+    return createCollection(albumName, "album");
 };
 
 const createCollection = async (
@@ -136,14 +136,20 @@ const postCollection = async (
 };
 
 export const createFavoritesCollection = () => {
-    return createCollection(FAVORITE_COLLECTION_NAME, CollectionType.favorites);
+    return createCollection(FAVORITE_COLLECTION_NAME, "favorites");
 };
 
-export const addToFavorites = async (file: EnteFile) => {
-    await addMultipleToFavorites([file]);
+export const addToFavorites = async (
+    file: EnteFile,
+    disableOldWorkaround?: boolean,
+) => {
+    await addMultipleToFavorites([file], disableOldWorkaround);
 };
 
-export const addMultipleToFavorites = async (files: EnteFile[]) => {
+export const addMultipleToFavorites = async (
+    files: EnteFile[],
+    disableOldWorkaround?: boolean,
+) => {
     try {
         let favCollection = await getFavCollection();
         if (!favCollection) {
@@ -152,10 +158,19 @@ export const addMultipleToFavorites = async (files: EnteFile[]) => {
         await addToCollection(favCollection, files);
     } catch (e) {
         log.error("failed to add to favorite", e);
+        // Old code swallowed the error here. This isn't good, but to
+        // avoid changing existing behaviour only new code will set the
+        // disableOldWorkaround flag to instead rethrow it.
+        //
+        // TODO: Migrate old code, remove this flag, always throw.
+        if (disableOldWorkaround) throw e;
     }
 };
 
-export const removeFromFavorites = async (file: EnteFile) => {
+export const removeFromFavorites = async (
+    file: EnteFile,
+    disableOldWorkaround?: boolean,
+) => {
     try {
         const favCollection = await getFavCollection();
         if (!favCollection) {
@@ -164,6 +179,8 @@ export const removeFromFavorites = async (file: EnteFile) => {
         await removeFromCollection(favCollection.id, [file]);
     } catch (e) {
         log.error("remove from favorite failed", e);
+        // TODO: See disableOldWorkaround in addMultipleToFavorites.
+        if (disableOldWorkaround) throw e;
     }
 };
 
@@ -173,7 +190,7 @@ export const removeFromCollection = async (
     allFiles?: EnteFile[],
 ) => {
     try {
-        const user: User = getData(LS_KEYS.USER);
+        const user: User = getData("user");
         const nonUserFiles = [];
         const userFiles = [];
         for (const file of toRemoveFiles) {
@@ -215,7 +232,7 @@ export const removeUserFiles = async (
 
         const collections = await getLocalCollections();
         const collectionsMap = new Map(collections.map((c) => [c.id, c]));
-        const user: User = getData(LS_KEYS.USER);
+        const user: User = getData("user");
 
         for (const [targetCollectionID, files] of groupedFiles.entries()) {
             const targetCollection = collectionsMap.get(targetCollectionID);
@@ -358,9 +375,7 @@ export const updateCollectionMagicMetadata = async (
         await apiURL("/collections/magic-metadata"),
         reqBody,
         null,
-        {
-            "X-Auth-Token": token,
-        },
+        { "X-Auth-Token": token },
     );
     const updatedCollection: Collection = {
         ...collection,
@@ -398,9 +413,7 @@ export const updateSharedCollectionMagicMetadata = async (
         await apiURL("/collections/sharee-magic-metadata"),
         reqBody,
         null,
-        {
-            "X-Auth-Token": token,
-        },
+        { "X-Auth-Token": token },
     );
     const updatedCollection: Collection = {
         ...collection,
@@ -438,9 +451,7 @@ export const updatePublicCollectionMagicMetadata = async (
         await apiURL("/collections/public-magic-metadata"),
         reqBody,
         null,
-        {
-            "X-Auth-Token": token,
-        },
+        { "X-Auth-Token": token },
     );
     const updatedCollection: Collection = {
         ...collection,
@@ -458,7 +469,7 @@ export const renameCollection = async (
 ) => {
     if (isQuickLinkCollection(collection)) {
         // Convert quick link collection to normal collection on rename
-        await changeCollectionSubType(collection, SUB_TYPE.DEFAULT);
+        await changeCollectionSubType(collection, CollectionSubType.default);
     }
     const token = getToken();
     const cryptoWorker = await sharedCryptoWorker();
@@ -473,9 +484,7 @@ export const renameCollection = async (
         await apiURL("/collections/rename"),
         collectionRenameRequest,
         null,
-        {
-            "X-Auth-Token": token,
-        },
+        { "X-Auth-Token": token },
     );
 };
 
@@ -502,9 +511,7 @@ export const shareCollection = async (
             await apiURL("/collections/share"),
             shareCollectionRequest,
             null,
-            {
-                "X-Auth-Token": token,
-            },
+            { "X-Auth-Token": token },
         );
     } catch (e) {
         log.error("share collection failed ", e);
@@ -526,9 +533,7 @@ export const unshareCollection = async (
             await apiURL("/collections/unshare"),
             shareCollectionRequest,
             null,
-            {
-                "X-Auth-Token": token,
-            },
+            { "X-Auth-Token": token },
         );
     } catch (e) {
         log.error("unshare collection failed ", e);
@@ -548,9 +553,7 @@ export const createShareableURL = async (collection: Collection) => {
             await apiURL("/collections/share-url"),
             createPublicAccessTokenRequest,
             null,
-            {
-                "X-Auth-Token": token,
-            },
+            { "X-Auth-Token": token },
         );
         return resp.data.result as PublicURL;
     } catch (e) {
@@ -569,9 +572,7 @@ export const deleteShareableURL = async (collection: Collection) => {
             await apiURL(`/collections/share-url/${collection.id}`),
             null,
             null,
-            {
-                "X-Auth-Token": token,
-            },
+            { "X-Auth-Token": token },
         );
     } catch (e) {
         log.error("deleteShareableURL failed ", e);
@@ -591,9 +592,7 @@ export const updateShareableURL = async (
             await apiURL("/collections/share-url"),
             request,
             null,
-            {
-                "X-Auth-Token": token,
-            },
+            { "X-Auth-Token": token },
         );
         return res.data.result as PublicURL;
     } catch (e) {
@@ -605,7 +604,7 @@ export const updateShareableURL = async (
 export const getFavCollection = async () => {
     const collections = await getLocalCollections();
     for (const collection of collections) {
-        if (collection.type === CollectionType.favorites) {
+        if (collection.type == "favorites") {
             return collection;
         }
     }
@@ -663,17 +662,14 @@ export async function getUncategorizedCollection(
         collections = await getLocalCollections();
     }
     const uncategorizedCollection = collections.find(
-        (collection) => collection.type === CollectionType.uncategorized,
+        (collection) => collection.type == "uncategorized",
     );
 
     return uncategorizedCollection;
 }
 
 export function createUnCategorizedCollection() {
-    return createCollection(
-        UNCATEGORIZED_COLLECTION_NAME,
-        CollectionType.uncategorized,
-    );
+    return createCollection(UNCATEGORIZED_COLLECTION_NAME, "uncategorized");
 }
 
 export async function getDefaultHiddenCollection(): Promise<Collection> {
@@ -686,8 +682,8 @@ export async function getDefaultHiddenCollection(): Promise<Collection> {
 }
 
 export function createHiddenCollection() {
-    return createCollection(HIDDEN_COLLECTION_NAME, CollectionType.album, {
-        subType: SUB_TYPE.DEFAULT_HIDDEN,
+    return createCollection(HIDDEN_COLLECTION_NAME, "album", {
+        subType: CollectionSubType.defaultHidden,
         visibility: ItemVisibility.hidden,
     });
 }

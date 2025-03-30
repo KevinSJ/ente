@@ -26,13 +26,25 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("مرحبًا مجددًا!"),
         "ackPasswordLostWarning": MessageLookupByLibrary.simpleMessage(
             "أُدركُ أنّني فقدتُ كلمة مروري، فقد أفقد بياناتي لأن بياناتي <underline>مشفرة تشفيرًا تامًّا من النهاية إلى النهاية</underline>."),
+        "askDeleteReason": MessageLookupByLibrary.simpleMessage(
+            "ما السبب الرئيسي وراء حذف حسابك؟"),
         "cancel": MessageLookupByLibrary.simpleMessage("إلغاء"),
         "decrypting": MessageLookupByLibrary.simpleMessage("فك التشفير..."),
+        "deleteAccount": MessageLookupByLibrary.simpleMessage("حذف الحساب"),
+        "deleteAccountFeedbackPrompt": MessageLookupByLibrary.simpleMessage(
+            "نحن آسفون لرؤيتك تذهب. يرجى مشاركة ملاحظاتك لمساعدتنا على التحسن."),
         "email": MessageLookupByLibrary.simpleMessage("البريد الإلكتروني"),
+        "emailAlreadyRegistered": MessageLookupByLibrary.simpleMessage(
+            "البريد الإلكتروني مسجل بالفعل."),
+        "emailNotRegistered":
+            MessageLookupByLibrary.simpleMessage("البريد الإلكتروني غير مسجل."),
+        "enterValidEmail": MessageLookupByLibrary.simpleMessage(
+            "الرجاء إدخال بريد إلكتروني صالح."),
         "enterYourEmailAddress":
             MessageLookupByLibrary.simpleMessage("أدخل عنوان بريدك الإلكتروني"),
         "enterYourRecoveryKey":
             MessageLookupByLibrary.simpleMessage("أدخل رمز الاسترداد"),
+        "feedback": MessageLookupByLibrary.simpleMessage("ملاحظات"),
         "forgotPassword":
             MessageLookupByLibrary.simpleMessage("نسيت كلمة المرور"),
         "incorrectRecoveryKeyBody": MessageLookupByLibrary.simpleMessage(
@@ -41,6 +53,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("مفتاح الاسترداد غير صحيح"),
         "invalidEmailAddress": MessageLookupByLibrary.simpleMessage(
             "عنوان البريد الإلكتروني غير صالح"),
+        "kindlyHelpUsWithThisInformation": MessageLookupByLibrary.simpleMessage(
+            "الرجاء مساعدتنا بهذه المعلومات"),
         "noRecoveryKey":
             MessageLookupByLibrary.simpleMessage("ما من مفتاح استرداد؟"),
         "noRecoveryKeyNoDecryption": MessageLookupByLibrary.simpleMessage(

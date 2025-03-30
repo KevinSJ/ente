@@ -10,6 +10,7 @@ import "package:photos/core/event_bus.dart";
 import "package:photos/events/location_tag_updated_event.dart";
 import "package:photos/extensions/stop_watch.dart";
 import "package:photos/models/api/entity/type.dart";
+import "package:photos/models/base_location.dart";
 import "package:photos/models/file/file.dart";
 import "package:photos/models/local_entity_data.dart";
 import "package:photos/models/location/location.dart";
@@ -17,6 +18,8 @@ import 'package:photos/models/location_tag/location_tag.dart';
 import "package:photos/service_locator.dart";
 import "package:photos/services/remote_assets_service.dart";
 import "package:shared_preferences/shared_preferences.dart";
+
+const double earthRadius = 6371; // Earth's radius in kilometers
 
 class LocationService {
   final SharedPreferences prefs;
@@ -30,6 +33,9 @@ class LocationService {
   static const kCitiesRemotePath = "https://static.ente.io/world_cities.json";
 
   List<City> _cities = [];
+
+  // TODO: lau: consider actually using this in location section
+  List<BaseLocation> baseLocations = [];
 
   LocationService(this.prefs) {
     debugPrint('LocationService constructor');
@@ -62,7 +68,8 @@ class LocationService {
     List<EnteFile> allFiles,
     String query,
   ) async {
-    if (allFiles.isEmpty && query.isEmpty) {
+    // check if the cities where not loaded when discovery section was loaded
+    if (allFiles.isNotEmpty && _cities.isEmpty && query.isEmpty) {
       reloadLocationDiscoverySection = true;
     }
     final EnteWatch w = EnteWatch("cities_search")..start();
@@ -80,6 +87,13 @@ class LocationService {
       '${result.length} cities',
     );
     return result;
+  }
+
+  Future<List<City>> getCities() async {
+    if (_cities.isEmpty) {
+      await _loadCities();
+    }
+    return _cities;
   }
 
   Future<Iterable<LocalEntity<LocationTag>>> getLocationTags() {
@@ -342,6 +356,26 @@ bool isFileInsideLocationTag(
     return true;
   }
   return false;
+}
+
+double calculateDistance(Location point1, Location point2) {
+  final lat1 = point1.latitude! * (pi / 180);
+  final lat2 = point2.latitude! * (pi / 180);
+  final long1 = point1.longitude! * (pi / 180);
+  final long2 = point2.longitude! * (pi / 180);
+
+  // Difference in latitude and longitude
+  final dLat = lat2 - lat1;
+  final dLong = long2 - long1;
+
+  // Haversine formula
+  final a = sin(dLat / 2) * sin(dLat / 2) +
+      cos(lat1) * cos(lat2) * sin(dLong / 2) * sin(dLong / 2);
+
+  // Angular distance in radians
+  final c = 2 * atan2(sqrt(a), sqrt(1 - a));
+
+  return earthRadius * c; // Distance in kilometers
 }
 
 ///The area bounded by the location tag becomes more elliptical with increase
