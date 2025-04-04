@@ -1,28 +1,27 @@
-import { isDesktop } from "@/base/app";
-import { blobCache, type BlobCache } from "@/base/blob-cache";
+import { blobCache, type BlobCache } from "ente-base/blob-cache";
 import {
     decryptStreamBytes,
     decryptStreamChunk,
     decryptThumbnail,
     initChunkDecryption,
-} from "@/base/crypto";
+} from "ente-base/crypto";
 import {
     authenticatedPublicAlbumsRequestHeaders,
     authenticatedRequestHeaders,
     publicRequestHeaders,
     retryEnsuringHTTPOk,
     type PublicAlbumsCredentials,
-} from "@/base/http";
-import { ensureAuthToken } from "@/base/local-user";
-import log from "@/base/log";
-import { customAPIOrigin } from "@/base/origins";
+} from "ente-base/http";
+import { ensureAuthToken } from "ente-base/local-user";
+import log from "ente-base/log";
+import { customAPIOrigin } from "ente-base/origins";
 import {
     playableVideoBlob,
     renderableImageBlob,
-} from "@/gallery/utils/convert";
-import type { EnteFile } from "@/media/file";
-import { FileType } from "@/media/file-type";
-import { decodeLivePhoto } from "@/media/live-photo";
+} from "ente-gallery/utils/convert";
+import type { EnteFile } from "ente-media/file";
+import { FileType } from "ente-media/file-type";
+import { decodeLivePhoto } from "ente-media/live-photo";
 
 export interface LivePhotoSourceURL {
     image: () => Promise<string | undefined>;
@@ -55,12 +54,6 @@ export interface RenderableSourceURLs {
     url: string | LivePhotoSourceURL | LoadedLivePhotoSourceURL;
     originalImageBlob?: Blob | undefined;
     type: "normal" | "livePhoto";
-    /**
-     * `true` if there is potential conversion that can still be applied.
-     *
-     * See: [Note: Forcing conversion of playable videos]
-     */
-    canForceConvert?: boolean;
     /**
      * Best effort attempt at obtaining the MIME type.
      *
@@ -296,28 +289,21 @@ class DownloadManager {
      * (if possible).
      *
      * See the documentation of {@link RenderableSourceURLs} for more details.
-     *
-     * The `forceConvert` option is true when the user presses the "Convert"
-     * button. See: [Note: Forcing conversion of playable videos].
      */
     renderableSourceURLs = async (
         file: EnteFile,
-        opts?: { forceConvert?: boolean },
     ): Promise<RenderableSourceURLs> => {
-        const forceConvert = opts?.forceConvert ?? false;
-        if (forceConvert || !this.renderableSourceURLPromises.has(file.id)) {
-            this.renderableSourceURLPromises.set(
-                file.id,
-                createRenderableSourceURLs(
-                    file,
-                    this.fileURLDownloadAndCacheIfNeeded(file),
-                    forceConvert,
-                ),
+        let promise = this.renderableSourceURLPromises.get(file.id);
+        if (!promise) {
+            promise = createRenderableSourceURLs(
+                file,
+                this.fileURLDownloadAndCacheIfNeeded(file),
             );
+            this.renderableSourceURLPromises.set(file.id, promise);
         }
 
         try {
-            return await this.renderableSourceURLPromises.get(file.id)!;
+            return await promise;
         } catch (e) {
             log.error("Failed to obtain renderableSourceURLs", e);
             this.renderableSourceURLPromises.delete(file.id);
@@ -582,14 +568,10 @@ const wrapErrors = <T>(op: () => Promise<T>) =>
  * Create and return a {@link RenderableSourceURLs} for the given {@link file},
  * where {@link originalFileURLPromise} is a promise that resolves with an
  * (object) URL to the contents of the original file.
- *
- * @param forceConvert `true` when the user presses the "Convert" button. See:
- * [Note: Forcing conversion of playable videos].
  */
 const createRenderableSourceURLs = async (
     file: EnteFile,
     originalFileURLPromise: Promise<string>,
-    forceConvert: boolean,
 ): Promise<RenderableSourceURLs> => {
     const originalFileURL = await originalFileURLPromise;
     const fileBlob = await fetch(originalFileURL).then((res) => res.blob());
@@ -607,7 +589,6 @@ const createRenderableSourceURLs = async (
         | undefined;
     let type: RenderableSourceURLs["type"] = "normal";
     let mimeType: string | undefined;
-    let canForceConvert = false;
 
     const fileName = file.metadata.title;
     switch (file.metadata.fileType) {
@@ -625,20 +606,10 @@ const createRenderableSourceURLs = async (
             break;
         }
         case FileType.video: {
-            const convertedBlob = await playableVideoBlob(
-                fileName,
-                fileBlob,
-                forceConvert,
-            );
+            const convertedBlob = await playableVideoBlob(fileName, fileBlob);
             const convertedURL = existingOrNewObjectURL(convertedBlob);
             url = convertedURL;
             mimeType = convertedBlob?.type;
-
-            const isOriginal = convertedURL === originalFileURL;
-            const isRenderable = !!convertedURL;
-            canForceConvert =
-                isDesktop && !forceConvert && isOriginal && isRenderable;
-
             break;
         }
         default: {
@@ -650,7 +621,7 @@ const createRenderableSourceURLs = async (
     // TODO: Can we remove this non-null assertion and reflect it in the types?
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
-    return { url: url!, originalImageBlob, type, mimeType, canForceConvert };
+    return { url: url!, originalImageBlob, type, mimeType };
 };
 
 async function getRenderableLivePhotoURL(
@@ -686,7 +657,6 @@ async function getRenderableLivePhotoURL(
             const convertedVideoBlob = await playableVideoBlob(
                 livePhoto.videoFileName,
                 videoBlob,
-                false,
             );
             if (!convertedVideoBlob) return undefined;
             return URL.createObjectURL(convertedVideoBlob);

@@ -35,6 +35,7 @@ import log, { initLogging } from "./main/log";
 import { createApplicationMenu, createTrayContextMenu } from "./main/menu";
 import { setupAutoUpdater } from "./main/services/app-update";
 import autoLauncher from "./main/services/auto-launcher";
+import { shouldHideDockIcon } from "./main/services/store";
 import { createWatcher } from "./main/services/watch";
 import { userPreferences } from "./main/stores/user-preferences";
 import { migrateLegacyWatchStoreIfNeeded } from "./main/stores/watch";
@@ -421,9 +422,8 @@ const createMainWindow = () => {
 
     window.on("hide", () => {
         // On macOS, when hiding the window also hide the app's icon in the dock
-        // if the user has selected the Settings > Hide dock icon checkbox.
-        if (process.platform == "darwin" && userPreferences.get("hideDockIcon"))
-            app.dock.hide();
+        // unless the user has unchecked the Settings > Hide dock icon checkbox.
+        if (shouldHideDockIcon()) app.dock.hide();
     });
 
     window.on("show", () => {
@@ -675,6 +675,14 @@ const setupTrayItem = (mainWindow: BrowserWindow) => {
     const tray = new Tray(trayIcon);
     tray.setToolTip("Ente Photos");
     tray.setContextMenu(createTrayContextMenu(mainWindow));
+
+    // On Windows and Linux, toggle the window on double-click (Double clicks
+    // are captured by the context menu on macOS).
+    if (process.platform != "darwin") {
+        tray.on("double-click", () =>
+            mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show(),
+        );
+    }
 };
 
 /**
