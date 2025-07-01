@@ -47,10 +47,14 @@ import { FullScreenDropZone } from "ente-gallery/components/FullScreenDropZone";
 import { downloadManager } from "ente-gallery/services/download";
 import { extractCollectionKeyFromShareURL } from "ente-gallery/services/share";
 import { updateShouldDisableCFUploadProxy } from "ente-gallery/services/upload";
-import { sortFiles } from "ente-gallery/utils/files";
+import { sortFiles } from "ente-gallery/utils/file";
 import type { Collection } from "ente-media/collection";
 import { type EnteFile } from "ente-media/file";
-import { verifyPublicAlbumPassword } from "ente-new/albums/services/publicCollection";
+import {
+    savedLastPublicCollectionReferralCode,
+    savedPublicCollectionFiles,
+} from "ente-new/albums/services/public-albums-fdb";
+import { verifyPublicAlbumPassword } from "ente-new/albums/services/public-collection";
 import {
     GalleryItemsHeaderAdapter,
     GalleryItemsSummary,
@@ -66,10 +70,8 @@ import { type FileWithPath } from "react-dropzone";
 import {
     getLocalPublicCollection,
     getLocalPublicCollectionPassword,
-    getLocalPublicFiles,
     getPublicCollection,
     getPublicCollectionUID,
-    getReferralCode,
     removePublicCollectionWithFiles,
     removePublicFiles,
     savePublicCollectionPassword,
@@ -220,7 +222,8 @@ export default function PublicCollectionGallery() {
                 const accessToken = t;
                 let accessTokenJWT: string | undefined;
                 if (localCollection) {
-                    referralCode.current = await getReferralCode();
+                    referralCode.current =
+                        await savedLastPublicCollectionReferralCode();
                     const sortAsc: boolean =
                         localCollection?.pubMagicMetadata?.data.asc ?? false;
                     setPublicCollection(localCollection);
@@ -228,7 +231,8 @@ export default function PublicCollectionGallery() {
                         localCollection?.publicURLs?.[0]?.passwordEnabled;
                     setIsPasswordProtected(isPasswordProtected);
                     const collectionUID = getPublicCollectionUID(accessToken);
-                    const localFiles = await getLocalPublicFiles(collectionUID);
+                    const localFiles =
+                        await savedPublicCollectionFiles(accessToken);
                     const localPublicFiles = sortFiles(localFiles, sortAsc);
                     setPublicFiles(localPublicFiles);
                     accessTokenJWT =
@@ -238,7 +242,7 @@ export default function PublicCollectionGallery() {
                 downloadManager.setPublicAlbumsCredentials(credentials.current);
                 // Update the CF proxy flag, but we don't need to block on it.
                 void updateShouldDisableCFUploadProxy();
-                await syncWithRemote();
+                await publicAlbumsRemotePull();
             } finally {
                 if (!redirectingToWebsite) {
                     setLoading(false);
@@ -284,7 +288,11 @@ export default function PublicCollectionGallery() {
         );
     }, [onAddPhotos]);
 
-    const syncWithRemote = useCallback(async () => {
+    /**
+     * Pull the latest data related to the public album from remote, updating
+     * both our local database and component state.
+     */
+    const publicAlbumsRemotePull = useCallback(async () => {
         const collectionUID = getPublicCollectionUID(
             credentials.current.accessToken,
         );
@@ -358,7 +366,7 @@ export default function PublicCollectionGallery() {
                 setPublicCollection(null);
                 setPublicFiles(null);
             } else {
-                log.error("failed to sync public album with remote", e);
+                log.error("Public album remote pull failed", e);
             }
         } finally {
             hideLoadingBar();
@@ -397,7 +405,7 @@ export default function PublicCollectionGallery() {
             throw e;
         }
 
-        await syncWithRemote();
+        await publicAlbumsRemotePull();
     };
 
     const clearSelection = () => {
@@ -491,9 +499,9 @@ export default function PublicCollectionGallery() {
                 >
                     {selected.count > 0 ? (
                         <SelectedFileOptions
-                            downloadFilesHelper={downloadFilesHelper}
-                            clearSelection={clearSelection}
                             count={selected.count}
+                            clearSelection={clearSelection}
+                            downloadFilesHelper={downloadFilesHelper}
                         />
                     ) : (
                         <SpacedRow sx={{ flex: 1 }}>
@@ -519,22 +527,22 @@ export default function PublicCollectionGallery() {
                     setFilesDownloadProgressAttributesCreator={
                         setFilesDownloadProgressAttributesCreator
                     }
-                    onSyncWithRemote={syncWithRemote}
+                    onRemotePull={publicAlbumsRemotePull}
                     onVisualFeedback={handleVisualFeedback}
                 />
                 {blockingLoad && <TranslucentLoadingOverlay />}
                 <Upload
-                    syncWithRemote={syncWithRemote}
                     uploadCollection={publicCollection}
                     setLoading={setBlockingLoad}
                     setShouldDisableDropzone={setShouldDisableDropzone}
+                    uploadTypeSelectorIntent="collect"
+                    uploadTypeSelectorView={uploadTypeSelectorView}
+                    onRemotePull={publicAlbumsRemotePull}
                     onUploadFile={(file) =>
                         setPublicFiles(sortFiles([...publicFiles, file]))
                     }
-                    uploadTypeSelectorView={uploadTypeSelectorView}
                     closeUploadTypeSelector={closeUploadTypeSelectorView}
-                    showSessionExpiredMessage={showPublicLinkExpiredMessage}
-                    uploadTypeSelectorIntent="collect"
+                    onShowSessionExpiredDialog={showPublicLinkExpiredMessage}
                     {...{ dragAndDropFiles }}
                 />
                 <FilesDownloadProgress
@@ -612,9 +620,9 @@ interface SelectedFileOptionsProps {
 }
 
 const SelectedFileOptions: React.FC<SelectedFileOptionsProps> = ({
-    downloadFilesHelper,
     count,
     clearSelection,
+    downloadFilesHelper,
 }) => (
     <Stack
         direction="row"
