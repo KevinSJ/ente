@@ -64,7 +64,7 @@ jobs:
               uses: actions/upload-artifact@main
               with:
                 name: ente-photos-android
-                path: mobile/build/app/outputs/flutter-apk/
+                path: mobile/apps/photos/build/app/outputs/flutter-apk/
 
             - name: Generate release tag
               id: tag

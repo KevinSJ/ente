@@ -12,13 +12,16 @@ on:
 env:
     FLUTTER_VERSION: "3.24.3"
 
+permissions:
+    contents: write
+
 jobs:
     build:
         runs-on: ubuntu-latest
 
         defaults:
             run:
-                working-directory: auth
+                working-directory: mobile/apps/auth
 
         steps:
             - name: Checkout code and submodules
@@ -60,8 +63,8 @@ jobs:
             - name: Upload outputs directory
               uses: actions/upload-artifact@main
               with:
-                name: ente-photos-android
-                path: auth/build/app/outputs/flutter-apk/
+                name: ente-auth-android
+                path: mobile/apps/auth/build/app/outputs/flutter-apk/
 
             - name: Generate release tag
               id: tag
