@@ -80,7 +80,7 @@ jobs:
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               with:
                 tag_name: ${{ steps.tag.outputs.release_tag }}
-                body_path: mobile/release.txt
+                body_path: mobile/apps/photos/release.txt
                 files: mobile/apps/photos/build/app/outputs/flutter-apk/*
 
             - name: Remove old Releases
