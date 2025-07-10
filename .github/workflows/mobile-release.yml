@@ -81,7 +81,7 @@ jobs:
               with:
                 tag_name: ${{ steps.tag.outputs.release_tag }}
                 body_path: mobile/release.txt
-                files: mobile/build/app/outputs/flutter-apk/*
+                files: mobile/apps/photos/build/app/outputs/flutter-apk/*
 
             - name: Remove old Releases
               uses: dev-drprasad/delete-older-releases@master
